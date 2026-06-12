@@ -1,4 +1,4 @@
-const VERSION = "7.2.0";
+const VERSION = "7.5.0";
 const STORE = { history: "alaya_v70_history", settings: "alaya_v70_settings", draft: "alaya_v70_draft" };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -10,12 +10,22 @@ const planetDefs = [
   ["saturn","Saturno","♄","Saturn"],["uranus","Urano","♅","Uranus"],["neptune","Neptuno","♆","Neptune"],
   ["pluto","Plutón","♇","Pluto"]
 ];
+const pointDefs = [
+  ["asc","Ascendente","ASC"],["mc","Medio Cielo","MC"],["northNode","Nodo Norte","☊"],
+  ["southNode","Nodo Sur","☋"],["lilith","Lilith media","⚸"],["fortune","Parte de Fortuna","⊗"]
+];
 const aspectDefs = [
-  { name:"Conjunción", angle:0, orb:8, symbol:"☌", tone:"neutral" },
-  { name:"Sextil", angle:60, orb:5, symbol:"⚹", tone:"harmony" },
-  { name:"Cuadratura", angle:90, orb:6, symbol:"□", tone:"tension" },
-  { name:"Trígono", angle:120, orb:7, symbol:"△", tone:"harmony" },
-  { name:"Oposición", angle:180, orb:8, symbol:"☍", tone:"tension" }
+  { name:"Conjunción", angle:0, orb:8, symbol:"☌", tone:"neutral", major:true },
+  { name:"Semisextil", angle:30, orb:2, symbol:"⚺", tone:"adjustment" },
+  { name:"Semicuadratura", angle:45, orb:2, symbol:"∠", tone:"tension" },
+  { name:"Sextil", angle:60, orb:5, symbol:"⚹", tone:"harmony", major:true },
+  { name:"Quintil", angle:72, orb:2, symbol:"Q", tone:"creative" },
+  { name:"Cuadratura", angle:90, orb:6, symbol:"□", tone:"tension", major:true },
+  { name:"Trígono", angle:120, orb:7, symbol:"△", tone:"harmony", major:true },
+  { name:"Sesquicuadratura", angle:135, orb:2, symbol:"⚼", tone:"tension" },
+  { name:"Biquintil", angle:144, orb:2, symbol:"bQ", tone:"creative" },
+  { name:"Quincuncio", angle:150, orb:3, symbol:"⚻", tone:"adjustment" },
+  { name:"Oposición", angle:180, orb:8, symbol:"☍", tone:"tension", major:true }
 ];
 let geoCities = [];
 let selectedCity = null;
@@ -173,13 +183,29 @@ function calculateAscendant(date, latitude, longitude){
   const lambda = Math.atan2(-Math.cos(theta), Math.sin(theta) * Math.cos(epsilon) + Math.tan(phi) * Math.sin(epsilon)) / radians + 180;
   return normalize(lambda);
 }
+function calculateMidheaven(date, longitude){
+  const radians = Math.PI / 180;
+  const theta = normalize(greenwichSidereal(date) + longitude) * radians;
+  const epsilon = meanObliquity(date) * radians;
+  return normalize(Math.atan2(Math.sin(theta),Math.cos(theta) * Math.cos(epsilon)) / radians);
+}
+function calculateMeanNode(date){
+  const t = (julianDate(date) - 2451545.0) / 36525;
+  return normalize(125.04452 - 1934.136261 * t + 0.0020708 * t * t + t * t * t / 450000);
+}
+function calculateMeanLilith(date){
+  const t = (julianDate(date) - 2451545.0) / 36525;
+  return normalize(83.3532465 + 4069.0137287 * t - 0.01032 * t * t - t * t * t / 80053);
+}
 function parseImportedPositions(text){
   if(!text) return {};
   const aliases = {
     sun:["sol","sun","☉"],moon:["luna","moon","☽"],mercury:["mercurio","mercury","☿"],
     venus:["venus","♀"],mars:["marte","mars","♂"],jupiter:["júpiter","jupiter","♃"],
     saturn:["saturno","saturn","♄"],uranus:["urano","uranus","♅"],neptune:["neptuno","neptune","♆"],
-    pluto:["plutón","pluton","pluto","♇"],asc:["ascendente","asc","ac"]
+    pluto:["plutón","pluton","pluto","♇"],asc:["ascendente","asc","ac"],mc:["medio cielo","mc"],
+    northNode:["nodo norte","nodo verdadero","☊"],southNode:["nodo sur","☋"],lilith:["lilith","luna negra","⚸"],
+    fortune:["parte de fortuna","fortuna","⊗"]
   };
   const result = {};
   for(const [key, names] of Object.entries(aliases)){
@@ -199,9 +225,26 @@ function parseImportedPositions(text){
   }
   return result;
 }
-function calculateHouses(ascendant, system){
-  const first = system === "whole" ? Math.floor(ascendant / 30) * 30 : ascendant;
-  return Array.from({ length:12 }, (_, index) => normalize(first + index * 30));
+function divideArc(start, end){
+  const span = normalize(end - start);
+  return [start,normalize(start + span / 3),normalize(start + span * 2 / 3)];
+}
+function calculateHouses(ascendant, midheaven, system){
+  if(system === "whole"){
+    const first = Math.floor(ascendant / 30) * 30;
+    return Array.from({ length:12 }, (_, index) => normalize(first + index * 30));
+  }
+  if(system === "porphyry"){
+    const descendant = normalize(ascendant + 180);
+    const imumCoeli = normalize(midheaven + 180);
+    return [
+      ...divideArc(ascendant,imumCoeli),
+      ...divideArc(imumCoeli,descendant),
+      ...divideArc(descendant,midheaven),
+      ...divideArc(midheaven,ascendant)
+    ];
+  }
+  return Array.from({ length:12 }, (_, index) => normalize(ascendant + index * 30));
 }
 function houseFor(longitude, cusps){
   for(let index = 0; index < 12; index++){
@@ -212,7 +255,7 @@ function houseFor(longitude, cusps){
   return 1;
 }
 function calculateAspects(positions){
-  const keys = planetDefs.map(([key]) => key);
+  const keys = [...planetDefs.map(([key]) => key),"asc","mc","northNode","lilith","fortune"].filter(key => positions[key]);
   const aspects = [];
   for(let i = 0; i < keys.length; i++){
     for(let j = i + 1; j < keys.length; j++){
@@ -238,8 +281,8 @@ function dominantElement(positions){
   });
   return elements[scores.indexOf(Math.max(...scores))];
 }
-function nameFor(key){ return key === "asc" ? "Ascendente" : planetDefs.find(([id]) => id === key)?.[1] || key; }
-function glyphFor(key){ return key === "asc" ? "ASC" : planetDefs.find(([id]) => id === key)?.[2] || "•"; }
+function nameFor(key){ return planetDefs.find(([id]) => id === key)?.[1] || pointDefs.find(([id]) => id === key)?.[1] || key; }
+function glyphFor(key){ return planetDefs.find(([id]) => id === key)?.[2] || pointDefs.find(([id]) => id === key)?.[2] || "•"; }
 function buildReading(data){
   if(typeof Astronomy === "undefined") throw new Error("El módulo de cálculo no se ha cargado.");
   const date = localBirthToUtc(data);
@@ -250,17 +293,32 @@ function buildReading(data){
     positions[key] = { ...longitudeToPosition(longitude), source:imported[key] !== undefined ? "importada" : "calculada" };
   }
   const ascLongitude = imported.asc ?? calculateAscendant(date, Number(data.lat), Number(data.lon));
+  const mcLongitude = imported.mc ?? calculateMidheaven(date,Number(data.lon));
+  const northNodeLongitude = imported.northNode ?? calculateMeanNode(date);
+  const southNodeLongitude = imported.southNode ?? normalize(northNodeLongitude + 180);
+  const lilithLongitude = imported.lilith ?? calculateMeanLilith(date);
+  const fortuneLongitude = imported.fortune ?? normalize(ascLongitude + positions.moon.longitude - positions.sun.longitude);
   positions.asc = { ...longitudeToPosition(ascLongitude), source:imported.asc !== undefined ? "importada" : "aproximada" };
-  const cusps = calculateHouses(ascLongitude, data.houses);
+  positions.mc = { ...longitudeToPosition(mcLongitude), source:imported.mc !== undefined ? "importada" : "calculada" };
+  positions.northNode = { ...longitudeToPosition(northNodeLongitude), source:imported.northNode !== undefined ? "importada" : "calculada" };
+  positions.southNode = { ...longitudeToPosition(southNodeLongitude), source:imported.southNode !== undefined ? "importada" : "calculada" };
+  positions.lilith = { ...longitudeToPosition(lilithLongitude), source:imported.lilith !== undefined ? "importada" : "calculada" };
+  positions.fortune = { ...longitudeToPosition(fortuneLongitude), source:imported.fortune !== undefined ? "importada" : "calculada" };
+  const cusps = calculateHouses(ascLongitude,mcLongitude,data.houses);
   Object.values(positions).forEach(position => { position.house = houseFor(position.longitude, cusps); });
   const aspects = calculateAspects(positions);
   const element = dominantElement(positions);
-  const houseLabel = data.houses === "whole" ? "Signo completo" : "Casas iguales";
+  const houseLabels = { whole:"Signo completo",equal:"Casas iguales",porphyry:"Porfirio" };
+  const houseLabel = houseLabels[data.houses] || "Casas iguales";
   const method = Object.keys(imported).length ? `${Object.keys(imported).length} posiciones revisadas` : "Cálculo astral local";
   const sections = [
     { title:`Sol en ${positions.sun.sign}`, text:`Tu identidad central se expresa con cualidades de ${positions.sun.sign}. En casa ${positions.sun.house}, el foco vital se dirige a los temas de esa área de experiencia.` },
     { title:`Luna en ${positions.moon.sign}`, text:`La Luna describe necesidades emocionales y formas de buscar seguridad. Su casa ${positions.moon.house} muestra dónde se activa con más facilidad.` },
     { title:`Ascendente en ${positions.asc.sign}`, text:`El Ascendente aproxima tu forma de entrar en las situaciones y organiza las casas. Si la hora no es exacta, esta posición puede cambiar.` },
+    { title:`Medio Cielo en ${positions.mc.sign}`, text:`El Medio Cielo orienta la vocación, la visibilidad y la forma de construir una contribución pública. En ${positions.mc.sign}, esa dirección adopta su lenguaje particular.` },
+    { title:`Lilith en ${positions.lilith.sign}`, text:`Lilith media señala una zona de autonomía, intensidad y emociones que no aceptan ser domesticadas. En casa ${positions.lilith.house}, pide reconocer deseo, límites y poder personal.` },
+    { title:`Nodo Norte en ${positions.northNode.sign}`, text:`El eje nodal conecta hábitos conocidos con una dirección de crecimiento. El Nodo Norte en ${positions.northNode.sign}, casa ${positions.northNode.house}, describe cualidades que conviene desarrollar conscientemente.` },
+    { title:`Fortuna en ${positions.fortune.sign}`, text:`La Parte de Fortuna combina Sol, Luna y Ascendente. En casa ${positions.fortune.house}, sugiere un ámbito donde coherencia interna y acción pueden fluir con mayor naturalidad.` },
     { title:`Elemento ${element}`, text:`La distribución de los puntos personales da mayor peso a ${element.toLowerCase()}. Úsalo como una tendencia de lectura, no como una etiqueta cerrada.` }
   ];
   if(aspects[0]) sections.push({ title:`Aspecto dominante: ${aspects[0].name}`, text:`${nameFor(aspects[0].from)} y ${nameFor(aspects[0].to)} forman una ${aspects[0].name.toLowerCase()} con un orbe de ${round(aspects[0].orb,1)}°. Es uno de los vínculos geométricos más precisos de esta carta.` });
@@ -278,38 +336,67 @@ function svgLine(radiusA, radiusB, degree, className){
   const a = polar(300,300,radiusA,degree), b = polar(300,300,radiusB,degree);
   return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="${className}"/>`;
 }
+function angularDistance(a,b){
+  const distance = Math.abs(normalize(a) - normalize(b));
+  return Math.min(distance,360 - distance);
+}
+function layoutMarkers(reading, keys, rotation){
+  const tracks = [[],[],[]];
+  return keys.map(key => ({ key, angle:normalize(rotation + reading.positions[key].longitude) }))
+    .sort((a,b) => a.angle - b.angle)
+    .map(item => {
+      let track = tracks.findIndex(items => items.every(other => angularDistance(item.angle,other.angle) >= 13));
+      if(track < 0) track = tracks.reduce((best,items,index) => items.length < tracks[best].length ? index : best,0);
+      tracks[track].push(item.angle);
+      return { ...item, radius:[175,204,146][track], track };
+    });
+}
 function renderWheel(reading){
+  const center = 350;
   const rotation = -reading.positions.asc.longitude;
-  const zodiacLines = Array.from({ length:12 }, (_,i) => svgLine(210,274,rotation + i * 30,"wheel-line")).join("");
-  const zodiacLabels = signs.map((_,i) => {
-    const point = polar(300,300,242,rotation + i * 30 + 15);
-    return `<text x="${point.x}" y="${point.y}" class="zodiac-glyph">${signGlyph[i]}</text>`;
+  const line = (radiusA,radiusB,degree,className) => {
+    const a = polar(center,center,radiusA,degree), b = polar(center,center,radiusB,degree);
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="${className}"/>`;
+  };
+  const zodiacLines = Array.from({ length:12 }, (_,i) => line(248,326,rotation + i * 30,"wheel-line")).join("");
+  const degreeTicks = Array.from({ length:72 }, (_,i) => {
+    const degree = i * 5;
+    const inner = degree % 30 === 0 ? 248 : degree % 10 === 0 ? 316 : 321;
+    return line(inner,326,rotation + degree,degree % 30 === 0 ? "degree-tick major" : "degree-tick");
   }).join("");
-  const houseLines = reading.cusps.map(cusp => svgLine(72,210,rotation + cusp,"house-line")).join("");
+  const zodiacLabels = signs.map((_,i) => {
+    const point = polar(center,center,290,rotation + i * 30 + 15);
+    const namePoint = polar(center,center,316,rotation + i * 30 + 15);
+    return `<text x="${point.x}" y="${point.y}" class="zodiac-glyph">${signGlyph[i]}</text><text x="${namePoint.x}" y="${namePoint.y}" class="zodiac-name">${signs[i].slice(0,3).toUpperCase()}</text>`;
+  }).join("");
+  const houseLines = reading.cusps.map(cusp => line(104,248,rotation + cusp,"house-line")).join("");
   const houseLabels = reading.cusps.map((cusp,i) => {
     const next = reading.cusps[(i + 1) % 12];
     const span = normalize(next - cusp) || 30;
-    const point = polar(300,300,192,rotation + cusp + span / 2);
-    return `<text x="${point.x}" y="${point.y}" class="house-number">${i + 1}</text>`;
+    const point = polar(center,center,229,rotation + cusp + span / 2);
+    return `<circle cx="${point.x}" cy="${point.y}" r="13" class="house-number-bg"/><text x="${point.x}" y="${point.y + 1}" class="house-number">${i + 1}</text>`;
   }).join("");
-  const aspectLines = reading.aspects.slice(0,18).map(aspect => {
-    const a = polar(300,300,105,rotation + reading.positions[aspect.from].longitude);
-    const b = polar(300,300,105,rotation + reading.positions[aspect.to].longitude);
-    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="aspect-line aspect-${aspect.tone}"/>`;
+  const aspectLines = reading.aspects.slice(0,42).map(aspect => {
+    const a = polar(center,center,96,rotation + reading.positions[aspect.from].longitude);
+    const b = polar(center,center,96,rotation + reading.positions[aspect.to].longitude);
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="aspect-line aspect-${aspect.tone}${aspect.major ? " aspect-major" : " aspect-minor"}"><title>${nameFor(aspect.from)} ${aspect.name} ${nameFor(aspect.to)}</title></line>`;
   }).join("");
-  const markerKeys = ["sun","moon","mercury","venus","mars","jupiter","saturn","uranus","neptune","pluto"];
-  const markers = markerKeys.map((key,index) => {
+  const markerKeys = [...planetDefs.map(([key]) => key),"northNode","southNode","lilith","fortune"];
+  const markers = layoutMarkers(reading,markerKeys,rotation).map(({key,angle,radius,track}) => {
     const position = reading.positions[key];
-    const radius = 132 + (index % 2) * 25;
-    const point = polar(300,300,radius,rotation + position.longitude);
-    return `<g><circle cx="${point.x}" cy="${point.y}" r="15" class="planet-dot"/><text x="${point.x}" y="${point.y + 1}" class="planet-glyph">${glyphFor(key)}</text><title>${nameFor(key)}: ${position.label}, casa ${position.house}</title></g>`;
+    const anchor = polar(center,center,116,angle);
+    const point = polar(center,center,radius,angle);
+    return `<g class="planet-marker track-${track}"><line x1="${anchor.x}" y1="${anchor.y}" x2="${point.x}" y2="${point.y}" class="planet-guide"/><circle cx="${anchor.x}" cy="${anchor.y}" r="3" class="degree-dot"/><circle cx="${point.x}" cy="${point.y}" r="22" class="planet-dot"/><text x="${point.x}" y="${point.y - 5}" class="planet-glyph">${glyphFor(key)}</text><text x="${point.x}" y="${point.y + 12}" class="planet-degree">${position.degree}°</text><title>${nameFor(key)}: ${position.label}, casa ${position.house}</title></g>`;
   }).join("");
-  const ascPoint = polar(300,300,278,0);
-  return `<svg class="natal-wheel" viewBox="0 0 600 600" role="img" aria-label="Rueda natal de ${escapeHtml(reading.data.name)}">
-    <circle cx="300" cy="300" r="278" class="wheel-bg"/><circle cx="300" cy="300" r="210" class="wheel-ring"/><circle cx="300" cy="300" r="72" class="wheel-ring"/>
-    ${zodiacLines}${zodiacLabels}${houseLines}${houseLabels}${aspectLines}${markers}
-    <text x="${ascPoint.x - 16}" y="${ascPoint.y + 4}" class="axis-label">ASC</text>
-  </svg>`;
+  const axes = [["ASC",0],["DSC",180],["MC",rotation + reading.positions.mc.longitude],["IC",rotation + reading.positions.mc.longitude + 180]].map(([label,angle]) => {
+    const inside = polar(center,center,330,angle);
+    return `<text x="${inside.x}" y="${inside.y}" class="axis-label">${label}</text>`;
+  }).join("");
+  return `<svg class="natal-wheel" viewBox="0 0 700 700" role="img" aria-label="Cosmograma completo de ${escapeHtml(reading.data.name)}">
+    <circle cx="${center}" cy="${center}" r="334" class="wheel-bg"/><circle cx="${center}" cy="${center}" r="326" class="wheel-ring outer"/><circle cx="${center}" cy="${center}" r="248" class="wheel-ring"/><circle cx="${center}" cy="${center}" r="104" class="wheel-ring inner"/>
+    ${degreeTicks}${zodiacLines}${zodiacLabels}${houseLines}${houseLabels}${aspectLines}${markers}
+    ${axes}<circle cx="${center}" cy="${center}" r="7" class="wheel-center"/><text x="${center}" y="${center + 27}" class="wheel-center-label">ALAYA ASTRO</text>
+  </svg><div class="wheel-legend"><span><i class="legend-line harmony"></i>Fluidez</span><span><i class="legend-line tension"></i>Tensión</span><span><i class="legend-line adjustment"></i>Ajuste</span><span><i class="legend-line creative"></i>Creatividad</span><span><b>☊</b>Nodo</span><span><b>⚸</b>Lilith</span><span><b>⊗</b>Fortuna</span></div>`;
 }
 function renderBigThree(reading){
   const trio = ["sun","moon","asc"];
@@ -319,18 +406,92 @@ function renderBigThree(reading){
   }).join("");
 }
 function renderPositions(reading){
-  const keys = ["sun","moon","mercury","venus","mars","jupiter","saturn","uranus","neptune","pluto","asc"];
+  const keys = [...planetDefs.map(([key]) => key),"asc","mc","northNode","southNode","lilith","fortune"];
   return `<div class="planet-row header"><span>Punto</span><span>Posición</span><span>Casa</span><span>Fuente</span></div>` + keys.map(key => {
     const position = reading.positions[key];
     return `<div class="planet-row"><span class="planet-name"><span>${glyphFor(key)}</span>${nameFor(key)}</span><span>${position.degree}° ${String(position.minutes).padStart(2,"0")}′ ${position.sign}</span><span>${position.house}</span><span>${position.source}</span></div>`;
   }).join("");
 }
+function renderHouseCusps(reading){
+  return reading.cusps.map((cusp,index) => {
+    const position = longitudeToPosition(cusp);
+    const angle = index === 0 ? "ASC" : index === 3 ? "IC" : index === 6 ? "DSC" : index === 9 ? "MC" : "";
+    return `<article class="house-cusp"><span>${index + 1}</span><div><b>Casa ${index + 1}${angle ? ` · ${angle}` : ""}</b><small>${position.degree}° ${String(position.minutes).padStart(2,"0")}′ ${position.sign}</small></div></article>`;
+  }).join("");
+}
 function renderAspects(reading){
-  if(!reading.aspects.length) return "<p>No se encontraron aspectos mayores dentro de los orbes configurados.</p>";
-  return reading.aspects.slice(0,12).map(aspect => `<article class="aspect-card"><span><b>${nameFor(aspect.from)}</b><small>${reading.positions[aspect.from].sign}</small></span><span>${aspect.symbol}</span><span><b>${nameFor(aspect.to)}</b><small>${aspect.name} · orbe ${round(aspect.orb,1)}°</small></span></article>`).join("");
+  if(!reading.aspects.length) return "<p>No se encontraron aspectos dentro de los orbes configurados.</p>";
+  const major = reading.aspects.filter(aspect => aspect.major);
+  const minor = reading.aspects.filter(aspect => !aspect.major);
+  const cards = list => list.map(aspect => `<article class="aspect-card aspect-card-${aspect.tone}"><span><b>${nameFor(aspect.from)}</b><small>${reading.positions[aspect.from].sign}</small></span><span>${aspect.symbol}</span><span><b>${nameFor(aspect.to)}</b><small>${aspect.name} · orbe ${round(aspect.orb,1)}°</small></span></article>`).join("");
+  return `<div class="aspect-group"><h3>Aspectos mayores <small>${major.length}</small></h3><div class="aspect-grid">${cards(major)}</div></div><div class="aspect-group"><h3>Aspectos menores <small>${minor.length}</small></h3><div class="aspect-grid">${cards(minor)}</div></div>`;
 }
 function renderMethod(reading){
-  return `<b>Método y precisión</b><p>Posiciones tropicales geocéntricas calculadas para ${new Date(reading.utcDate).toLocaleString("es-ES",{ timeZone:"UTC" })} UTC. El Ascendente se obtiene mediante tiempo sidéreo local. Sistema de casas: ${reading.houseLabel}. La exactitud depende especialmente de la hora, el desfase UTC y las coordenadas introducidas.</p>`;
+  return `<b>Método y precisión</b><p>Posiciones tropicales geocéntricas calculadas para ${new Date(reading.utcDate).toLocaleString("es-ES",{ timeZone:"UTC" })} UTC. Ascendente y Medio Cielo se obtienen mediante tiempo sidéreo local; Nodo Norte y Lilith corresponden a sus posiciones medias. La Parte de Fortuna usa la fórmula diurna como aproximación. Sistema de casas: ${reading.houseLabel}. La exactitud depende especialmente de la hora, el desfase UTC y las coordenadas introducidas.</p>`;
+}
+function aiChartContext(reading){
+  const positions = Object.entries(reading.positions)
+    .map(([key,position]) => `${nameFor(key)}: ${position.label}, casa ${position.house}`)
+    .join("\n");
+  const aspects = reading.aspects.slice(0,24)
+    .map(aspect => `${nameFor(aspect.from)} ${aspect.name} ${nameFor(aspect.to)}, orbe ${round(aspect.orb,1)}°`)
+    .join("\n");
+  return `Sistema de casas: ${reading.houseLabel}
+Elemento dominante: ${reading.element}
+Intención de la persona: ${reading.data.intention || "Comprender su carta natal"}
+
+POSICIONES
+${positions}
+
+ASPECTOS MÁS PRECISOS
+${aspects}`;
+}
+function aiResponseText(response){
+  if(typeof response === "string") return response;
+  const content = response?.message?.content;
+  if(typeof content === "string") return content;
+  if(Array.isArray(content)) return content.map(part => part?.text || "").join("");
+  if(typeof response?.text === "string") return response.text;
+  return "";
+}
+function renderAiText(text){
+  return `<div class="ai-content">${escapeHtml(text).replace(/\n/g,"<br>")}</div>`;
+}
+async function generateAiReading(reading, article, button){
+  const output = $('[data-field="ai"]',article);
+  if(!window.puter?.ai?.chat){
+    output.innerHTML = "<p>La conexión con la IA no está disponible. Comprueba internet y vuelve a intentarlo.</p>";
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Interpretando la carta…";
+  output.classList.add("loading");
+  output.innerHTML = "<p>Uniendo planetas, casas y aspectos…</p>";
+  const messages = [
+    {
+      role:"system",
+      content:"Eres la voz astrológica de Alaya Astro. Redacta en español una interpretación natal profunda, cálida y responsable. La astrología es una herramienta simbólica de reflexión, no una certeza científica ni una predicción fatalista. No diagnostiques salud, no anuncies sucesos inevitables y no inventes posiciones. Organiza la respuesta con estos títulos: ESENCIA Y MUNDO EMOCIONAL, VOCACIÓN Y CAMINO, VÍNCULOS, SOMBRAS Y CRECIMIENTO, TALENTOS, y ORIENTACIÓN PRÁCTICA. Integra los aspectos entre sí, evita repetir datos y termina con tres preguntas de reflexión. Extensión aproximada: 900 palabras."
+    },
+    { role:"user", content:aiChartContext(reading) }
+  ];
+  try {
+    const response = await puter.ai.chat(messages,false,{ max_tokens:1800,temperature:.65 });
+    const text = aiResponseText(response).trim();
+    if(!text) throw new Error("Respuesta vacía");
+    reading.aiInterpretation = text;
+    reading.aiGenerated = new Date().toISOString();
+    $("#resultSlot").dataset.reading = JSON.stringify(reading);
+    output.innerHTML = renderAiText(text);
+    button.textContent = "Regenerar interpretación";
+    toast("Interpretación completada");
+  } catch(error){
+    console.error(error);
+    output.innerHTML = "<p>No se pudo completar la interpretación. Puede ser necesario iniciar sesión o revisar la conexión antes de intentarlo de nuevo.</p>";
+    button.textContent = "Reintentar interpretación";
+  } finally {
+    output.classList.remove("loading");
+    button.disabled = false;
+  }
 }
 function renderReading(reading){
   setStep(3);
@@ -341,14 +502,19 @@ function renderReading(reading){
   $('[data-field="wheel"]',template).innerHTML = renderWheel(reading);
   $('[data-field="bigThree"]',template).innerHTML = renderBigThree(reading);
   $('[data-field="positions"]',template).innerHTML = renderPositions(reading);
+  $('[data-field="houses"]',template).innerHTML = renderHouseCusps(reading);
   $('[data-field="method"]',template).innerHTML = renderMethod(reading);
   $('[data-field="aspects"]',template).innerHTML = renderAspects(reading);
   $('[data-field="sections"]',template).innerHTML = reading.sections.map(section => `<article class="reading-section"><h3>${escapeHtml(section.title)}</h3><p>${escapeHtml(section.text)}</p></article>`).join("");
+  $('[data-field="ai"]',template).innerHTML = reading.aiInterpretation ? renderAiText(reading.aiInterpretation) : "<p>La interpretación aparecerá aquí cuando pulses el botón.</p>";
   const slot = $("#resultSlot");
   slot.innerHTML = "";
   slot.append(template);
   slot.dataset.reading = JSON.stringify(reading);
   const article = $(".reading",slot);
+  const aiButton = $('[data-action="ai"]',article);
+  if(reading.aiInterpretation) aiButton.textContent = "Regenerar interpretación";
+  aiButton.onclick = () => generateAiReading(JSON.parse(slot.dataset.reading),article,aiButton);
   $('[data-action="save"]',article).onclick = () => saveReading(JSON.parse(slot.dataset.reading));
   $('[data-action="pdf"]',article).onclick = () => window.print();
   $('[data-action="copy"]',article).onclick = () => copyText(readingText(JSON.parse(slot.dataset.reading)));
@@ -361,10 +527,12 @@ function renderReading(reading){
 function readingText(reading){
   const positions = Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n");
   const sections = reading.sections.map(section => `${section.title}\n${section.text}`).join("\n\n");
-  return `${reading.title}\n${reading.subtitle}\n\n${positions}\n\n${sections}`;
+  const ai = reading.aiInterpretation ? `\n\nINTERPRETACIÓN CON IA\n${reading.aiInterpretation}` : "";
+  return `${reading.title}\n${reading.subtitle}\n\n${positions}\n\n${sections}${ai}`;
 }
 function htmlDoc(reading){
-  return `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(reading.title)}</title><style>body{font:16px/1.6 system-ui;max-width:900px;margin:auto;padding:32px;color:#303249;background:#fffefa}h1,h2{font-family:Georgia,serif;color:#496b96}.brand{letter-spacing:.18em;color:#a58035}.card{border:1px solid #ded7e8;border-radius:16px;padding:18px;margin:14px 0}.muted{color:#74758a}@media print{body{padding:0}}</style><p class="brand">ALAYA ASTRO</p><h1>${escapeHtml(reading.title)}</h1><p class="muted">${escapeHtml(reading.subtitle)}</p><div class="card"><h2>Posiciones</h2><pre>${escapeHtml(Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n"))}</pre></div>${reading.sections.map(section => `<section class="card"><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.text)}</p></section>`).join("")}</html>`;
+  const ai = reading.aiInterpretation ? `<section class="card"><h2>Interpretación personalizada</h2><p>${escapeHtml(reading.aiInterpretation).replace(/\n/g,"<br>")}</p></section>` : "";
+  return `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(reading.title)}</title><style>body{font:16px/1.6 system-ui;max-width:900px;margin:auto;padding:32px;color:#303249;background:#fffefa}h1,h2{font-family:Georgia,serif;color:#496b96}.brand{letter-spacing:.18em;color:#a58035}.card{border:1px solid #ded7e8;border-radius:16px;padding:18px;margin:14px 0}.muted{color:#74758a}@media print{body{padding:0}}</style><p class="brand">ALAYA ASTRO</p><h1>${escapeHtml(reading.title)}</h1><p class="muted">${escapeHtml(reading.subtitle)}</p><div class="card"><h2>Posiciones</h2><pre>${escapeHtml(Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n"))}</pre></div>${reading.sections.map(section => `<section class="card"><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.text)}</p></section>`).join("")}${ai}</html>`;
 }
 function download(name, content, type = "application/json"){
   const blob = new Blob([content],{ type });

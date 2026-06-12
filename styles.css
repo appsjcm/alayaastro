@@ -69,3 +69,49 @@ fieldset{border:0;padding:0;margin:0 0 24px}legend{font-weight:700;margin-bottom
 @media(max-width:580px){
   .premium-hero h1{font-size:2.7rem}.premium-hero{padding:25px 20px}.quick-actions{grid-template-columns:repeat(2,1fr)}.module-menu{grid-template-columns:1fr 1fr;padding:11px}.page-heading>img{width:150px;height:68px}
 }
+
+/* v7.3 · Cosmograma ampliado */
+.chart-dashboard{display:block;padding:30px clamp(12px,3vw,36px);background:linear-gradient(135deg,#fffdf9,#f2ecf8)}
+.wheel-wrap{width:100%;max-width:860px;margin:auto}.natal-wheel{display:block;width:100%;height:auto;filter:drop-shadow(0 16px 22px rgba(70,59,96,.12))}
+.wheel-bg{fill:#fffefa;stroke:#a99abc;stroke-width:2}.wheel-ring{fill:none;stroke:#b9acc9;stroke-width:1.4}.wheel-ring.outer{stroke:#c69a3d;stroke-width:2}.wheel-ring.inner{fill:#fbf8ff;stroke:#8e7ca7;stroke-width:1.5}
+.wheel-line{stroke:#cfc4dc;stroke-width:1.2}.house-line{stroke:#617da2;stroke-width:1.35}
+.aspect-line{opacity:.65}.aspect-major{stroke-width:1.8}.aspect-minor{stroke-width:.9;stroke-dasharray:3 3;opacity:.45}.aspect-harmony{stroke:#4d9085}.aspect-tension{stroke:#c56f68}.aspect-adjustment{stroke:#9a78b3}.aspect-creative{stroke:#c69a3d}.aspect-neutral{stroke:#68738d}
+.zodiac-glyph{font-size:25px;font-family:"Times New Roman",serif;fill:#3f628e;text-anchor:middle;dominant-baseline:middle}.zodiac-name{font-size:8px;font-weight:800;letter-spacing:.12em;fill:#8a799c;text-anchor:middle;dominant-baseline:middle}
+.house-number-bg{fill:#f2edf8;stroke:#b8aaca}.house-number{font-size:11px;font-weight:800;fill:#4e5571;text-anchor:middle;dominant-baseline:middle}
+.planet-guide{stroke:#aa9bb9;stroke-width:.8}.degree-dot{fill:#c69a3d}.planet-dot{fill:#fffefa;stroke:#9c7a30;stroke-width:1.8}.track-1 .planet-dot{fill:#f2edf8;stroke:#6e5a85}.track-2 .planet-dot{fill:#edf4f8;stroke:#496b96}.planet-glyph{font-size:18px;font-family:"Times New Roman",serif;font-weight:700;fill:#303249;text-anchor:middle;dominant-baseline:middle}
+.axis-label{font-size:10px;font-weight:900;letter-spacing:.08em;fill:#9b762b;text-anchor:middle;dominant-baseline:middle}.wheel-center{fill:#c69a3d}.wheel-center-label{font-size:8px;font-weight:800;letter-spacing:.16em;fill:#8a799c;text-anchor:middle}
+.big-three{max-width:860px;margin:20px auto 0;display:grid;grid-template-columns:1.25fr repeat(3,1fr);gap:14px}.signature,.big-three-card{border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.72);padding:15px}.signature{border-bottom:1px solid var(--line)}.big-three-card{grid-template-columns:44px 1fr auto;border-bottom:1px solid var(--line)}
+.aspects-panel{display:grid;gap:28px}.aspect-group h3{font:600 1.45rem/1 var(--serif);margin:0 0 13px}.aspect-group h3 small{display:inline-grid;place-items:center;min-width:28px;height:28px;margin-left:6px;border-radius:99px;background:var(--lavender-soft);font:700 .72rem Arial}
+.aspect-card{border-left:4px solid #8792a8}.aspect-card-harmony{border-left-color:#4d9085}.aspect-card-tension{border-left-color:#c56f68}.aspect-card-adjustment{border-left-color:#9a78b3}.aspect-card-creative{border-left-color:#c69a3d}
+@media(max-width:900px){.chart-dashboard{padding:20px 8px}.big-three{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:580px){.big-three{grid-template-columns:1fr}.aspect-grid{grid-template-columns:1fr}.planet-glyph{font-size:20px}}
+
+/* v7.4 · Interpretación con IA */
+.ai-reading{background:radial-gradient(circle at 92% 12%,rgba(198,154,61,.12),transparent 30%),linear-gradient(145deg,#fffdf8,#f3edf9)}
+.ai-heading{display:flex;align-items:center;justify-content:space-between;gap:24px}.ai-heading .block-heading{margin-bottom:0}.ai-heading .button{flex:0 0 auto}
+.ai-privacy{margin:22px 0;padding:13px 16px;border:1px solid #dacde6;border-radius:14px;background:rgba(255,255,255,.68);color:var(--muted);font-size:.82rem}
+.ai-output{min-height:150px;padding:clamp(20px,4vw,34px);border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.86);box-shadow:0 12px 32px rgba(67,61,91,.07)}
+.ai-output>p{margin:0;color:var(--muted)}.ai-output.loading{animation:aiPulse 1.4s ease-in-out infinite}.ai-content{font:1.02rem/1.8 Georgia,"Times New Roman",serif;color:#41445c}
+@keyframes aiPulse{50%{opacity:.58}}
+@media(max-width:700px){.ai-heading{align-items:flex-start;flex-direction:column}.ai-heading .button{width:100%}}
+
+/* v7.5 · Carta técnica, móvil e impresión */
+.choice-grid:has(input[value="porphyry"]){grid-template-columns:repeat(3,1fr)}.disabled-choice{opacity:.55;cursor:not-allowed}.disabled-choice:hover{transform:none}
+.module-soon{opacity:.55;cursor:not-allowed}.module-soon:hover{transform:none;background:transparent;border-color:transparent;box-shadow:none}
+.degree-tick{stroke:#b8adbf;stroke-width:.65}.degree-tick.major{stroke:#8c7d9d;stroke-width:1.2}.planet-degree{font-size:8px;font-weight:800;fill:#746680;text-anchor:middle}.wheel-legend{display:flex;justify-content:center;gap:10px 18px;flex-wrap:wrap;margin:4px auto 0;color:var(--muted);font-size:.75rem}.wheel-legend span{display:flex;align-items:center;gap:6px}.wheel-legend b{color:var(--blue);font-size:1rem}.legend-line{display:inline-block;width:24px;height:3px;border-radius:9px}.legend-line.harmony{background:#4d9085}.legend-line.tension{background:#c56f68}.legend-line.adjustment{background:#9a78b3}.legend-line.creative{background:#c69a3d}
+.houses-section{background:rgba(255,255,255,.5)}.house-cusp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.house-cusp{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.8)}.house-cusp>span{width:35px;height:35px;display:grid;place-items:center;border-radius:50%;background:var(--lavender-soft);color:var(--blue-deep);font-weight:800}.house-cusp div{display:grid}.house-cusp small{color:var(--muted)}
+.ai-status-row{display:flex;align-items:center;gap:8px;margin:20px 0 -10px;color:var(--muted);font-size:.8rem}.ai-status-row b{color:var(--ink)}.ai-status-dot{width:9px;height:9px;border-radius:50%;background:#68a281;box-shadow:0 0 0 4px rgba(104,162,129,.14)}
+@media(max-width:900px){.choice-grid:has(input[value="porphyry"]){grid-template-columns:1fr}.house-cusp-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:580px){
+  html{scroll-padding-bottom:120px}body{padding-bottom:calc(118px + env(safe-area-inset-bottom))}
+  .workspace{padding-bottom:105px}.bottom-nav{bottom:calc(8px + env(safe-area-inset-bottom));padding-bottom:8px;transition:transform .2s ease,opacity .2s ease}
+  body:has(input:focus,textarea:focus,select:focus) .bottom-nav{transform:translateY(calc(120% + env(safe-area-inset-bottom)));opacity:0;pointer-events:none}
+  .reading-actions{padding-bottom:30px}.house-cusp-grid{grid-template-columns:1fr}.wheel-legend{padding:0 12px;gap:7px 12px}
+  .result-nav{padding-right:18px}.ai-status-row{align-items:flex-start;flex-wrap:wrap}
+}
+@media print{
+  @page{size:A4;margin:11mm}.reading{font-size:10.5pt}.reading-header{min-height:48mm;border:1px solid #ddd;padding:12mm!important}.reading-header h1{font-size:30pt}.reading-header>img{width:42mm;height:22mm}
+  .chart-dashboard{break-after:page;padding:8mm 0!important}.natal-wheel{max-width:172mm!important}.wheel-legend{font-size:8pt}.big-three{grid-template-columns:repeat(4,1fr);gap:5mm}
+  .result-section-block{break-inside:auto}.planet-row,.aspect-card,.reading-section,.house-cusp{break-inside:avoid}.house-cusp-grid{grid-template-columns:repeat(3,1fr)}
+  .ai-reading{background:white}.ai-output{border:0;box-shadow:none;padding:0}.ai-privacy,.ai-status-row{display:none}.ai-content{font-size:10.5pt;line-height:1.55}
+}

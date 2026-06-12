@@ -1,4 +1,4 @@
-ALAYA ASTRO v7.1
+ALAYA ASTRO v7.5
 
 IDENTIDAD
 - Alaya Holistics es la marca principal.
@@ -9,15 +9,18 @@ IDENTIDAD
 EXPERIENCIA
 - Portada premium en colores claros.
 - Acciones rápidas, mapa modular y guía de bienvenida.
-- Carta natal con rueda SVG, posiciones, casas y aspectos.
+- Carta natal con cosmograma SVG ampliado, posiciones, casas y aspectos.
 - Informe imprimible con identidad Alaya Astro.
+- Interpretación profunda opcional con IA, integrada en el PDF y el informe.
 - Historial, exportación, copia de seguridad y PWA.
 
 CÁLCULO
 - Posiciones tropicales geocéntricas de diez cuerpos.
 - Ascendente mediante tiempo sidéreo local.
 - Casas de signo completo y casas iguales.
-- Aspectos mayores con orbes configurados.
+- ASC, DSC, MC, IC, nodos lunares, Lilith media y Parte de Fortuna.
+- Casas de signo completo, iguales y Porfirio, con tabla de cúspides.
+- Aspectos mayores y menores con orbes configurados.
 - Entrada de latitud, longitud y desfase UTC.
 - Importación opcional de posiciones ya revisadas.
 - Selector local de 252 países y territorios.
@@ -29,6 +32,7 @@ PRIVACIDAD
 - El cálculo se ejecuta en el dispositivo.
 - Cartas, borradores y preferencias se guardan en el navegador.
 - La aplicación no necesita cuentas ni envía los datos de nacimiento.
+- Al solicitar la interpretación con IA solo se comparten posiciones, aspectos e intención; se omiten nombre, fecha exacta y lugar.
 
 USO
 1. Abre index.html.

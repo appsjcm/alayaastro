@@ -4,8 +4,10 @@ INICIO RÁPIDO · ALAYA ASTRO
 2. Pulsa “Primera carta” para crear la tuya.
 3. Selecciona país y busca la ciudad; las coordenadas y el UTC se calculan solos.
 4. Elige signo completo o casas iguales.
-5. Revela el cosmograma.
-6. Guarda la carta o crea un PDF.
+5. Elige signo completo, casas iguales o Porfirio.
+6. Revela el cosmograma.
+7. Genera opcionalmente la interpretación con IA.
+8. Guarda la carta o crea un PDF.
 
 Las tres marcas incluidas son:
 - Alaya Holistics
