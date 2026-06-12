@@ -1,0 +1,21 @@
+PUBLICAR ALAYA ASTRO EN GITHUB PAGES
+
+1. Crea un repositorio nuevo en GitHub.
+2. Descomprime alaya-astro-github-v7.1.0.zip.
+3. Sube todo el contenido descomprimido a la raíz del repositorio.
+4. Comprueba que index.html queda en la raíz, no dentro de otra carpeta.
+5. Abre Settings > Pages.
+6. En Source selecciona “Deploy from a branch”.
+7. Selecciona la rama main y la carpeta /(root).
+8. Guarda y espera a que GitHub muestre la dirección publicada.
+
+CON GITHUB DESKTOP
+1. Descomprime el ZIP dentro de la carpeta del repositorio.
+2. Publica los cambios con GitHub Desktop.
+3. Activa Pages desde Settings > Pages, rama main y /(root).
+
+ACTUALIZACIONES
+- Sustituye los archivos por los de la versión nueva.
+- Conserva index.html en la raíz.
+- No elimines .nojekyll.
+- La versión PWA puede tardar unos minutos en renovarse.

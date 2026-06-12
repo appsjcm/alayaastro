@@ -1,24 +1,13 @@
-CÓMO HACER UNA CARTA EN ALAYA ASTRAL IA
+INICIO RÁPIDO · ALAYA ASTRO
 
-1. Abre la app.
-2. Pulsa "Crear mi carta".
-3. Escribe:
-   - Nombre
-   - Fecha de nacimiento
-   - Hora de nacimiento
-   - Ciudad
-   - País
-4. Pulsa "Siguiente".
-5. Elige una opción:
-   - Carta natal
-   - Energía de hoy
-   - Compatibilidad
-6. Escribe una pregunta si quieres.
-7. Pulsa "Generar carta".
-8. Cuando salga el resultado, puedes:
-   - Guardar carta
-   - Descargar PDF
-   - Copiar texto
-   - Descargar HTML
+1. Pulsa “Demo rápida” para explorar una carta completa.
+2. Pulsa “Primera carta” para crear la tuya.
+3. Completa nacimiento, coordenadas y UTC.
+4. Elige signo completo o casas iguales.
+5. Revela el cosmograma.
+6. Guarda la carta o crea un PDF.
 
-NO TOQUES EL MODO AVANZADO si solo quieres hacer una carta normal.
+Las tres marcas incluidas son:
+- Alaya Holistics
+- Alaya Astro
+- Alaya Herbolario

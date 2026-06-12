@@ -1,55 +1,396 @@
-const VERSION = "v6.7 Clarity";
-const STORE = { history: "alaya_v67_history", settings: "alaya_v67_settings", draft: "alaya_v67_draft" };
-const $ = (s, root = document) => root.querySelector(s);
-const $$ = (s, root = document) => [...root.querySelectorAll(s)];
+const VERSION = "7.1.0";
+const STORE = { history: "alaya_v70_history", settings: "alaya_v70_settings", draft: "alaya_v70_draft" };
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const signs = ["Aries","Tauro","Géminis","Cáncer","Leo","Virgo","Libra","Escorpio","Sagitario","Capricornio","Acuario","Piscis"];
-const glyph = {Aries:"♈",Tauro:"♉",Géminis:"♊",Cáncer:"♋",Leo:"♌",Virgo:"♍",Libra:"♎",Escorpio:"♏",Sagitario:"♐",Capricornio:"♑",Acuario:"♒",Piscis:"♓"};
-const planets = { sol:"☉", luna:"☽", asc:"ASC", mercurio:"☿", venus:"♀", marte:"♂" };
+const signGlyph = ["♈︎","♉︎","♊︎","♋︎","♌︎","♍︎","♎︎","♏︎","♐︎","♑︎","♒︎","♓︎"];
+const planetDefs = [
+  ["sun","Sol","☉","Sun"],["moon","Luna","☽","Moon"],["mercury","Mercurio","☿","Mercury"],
+  ["venus","Venus","♀","Venus"],["mars","Marte","♂","Mars"],["jupiter","Júpiter","♃","Jupiter"],
+  ["saturn","Saturno","♄","Saturn"],["uranus","Urano","♅","Uranus"],["neptune","Neptuno","♆","Neptune"],
+  ["pluto","Plutón","♇","Pluto"]
+];
+const aspectDefs = [
+  { name:"Conjunción", angle:0, orb:8, symbol:"☌", tone:"neutral" },
+  { name:"Sextil", angle:60, orb:5, symbol:"⚹", tone:"harmony" },
+  { name:"Cuadratura", angle:90, orb:6, symbol:"□", tone:"tension" },
+  { name:"Trígono", angle:120, orb:7, symbol:"△", tone:"harmony" },
+  { name:"Oposición", angle:180, orb:8, symbol:"☍", tone:"tension" }
+];
 
 function read(key, fallback){ try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
 function write(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
-function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.append(t); setTimeout(()=>t.remove(),2300); }
-function route(id){ $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id)); $$('[data-route]').forEach(a=>a.classList.toggle('active',a.dataset.route===id)); location.hash=id; if(id==='historial') renderHistory(); if(id==='inicio') renderHome(); }
-function setStep(n){ $$('.step-page').forEach(p=>p.classList.toggle('active',p.dataset.page===String(n))); $$('.dot').forEach(d=>d.classList.toggle('active',d.dataset.step===String(n))); }
-function formData(){ return Object.fromEntries(new FormData($('#chartForm')).entries()); }
-function requiredOk(){ const d=formData(); const missing=[]; if(!d.name?.trim()) missing.push('nombre'); if(!d.birthDate) missing.push('fecha'); if(!d.birthTime) missing.push('hora'); if(!d.city?.trim()) missing.push('ciudad'); if(!d.country?.trim()) missing.push('país'); if(missing.length){ toast('Falta: '+missing.join(', ')); return false;} return true; }
-function hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619);} return Math.abs(h); }
-function dayOfYear(dateStr){ const d=new Date(dateStr+'T12:00:00'); const y=new Date(d.getFullYear(),0,0); return Math.floor((d-y)/86400000); }
-function sunSign(dateStr){ const md=dateStr.slice(5); const ranges=[['Capricornio','01-20'],['Acuario','02-19'],['Piscis','03-21'],['Aries','04-20'],['Tauro','05-21'],['Géminis','06-21'],['Cáncer','07-23'],['Leo','08-23'],['Virgo','09-23'],['Libra','10-23'],['Escorpio','11-22'],['Sagitario','12-22'],['Capricornio','12-32']]; for(const [sign, end] of ranges){ if(md < end) return sign; } return 'Capricornio'; }
-function simplePositions(d){ const seed=hash(`${d.name}|${d.birthDate}|${d.birthTime}|${d.city}|${d.country}`); const sol=sunSign(d.birthDate); const idx=signs.indexOf(sol); const [hh,mm]=(d.birthTime||'12:00').split(':').map(Number); const lunarIndex=(dayOfYear(d.birthDate)+seed)%12; const ascIndex=(Math.floor((hh*60+mm)/120)+idx+hash(d.city)%12)%12; const mercury=signs[(idx+11+(seed%3))%12]; const venus=signs[(idx+10+(seed%5))%12]; const mars=signs[(idx+2+(seed%6))%12]; return { sol, luna: signs[lunarIndex], asc: signs[ascIndex], mercurio: mercury, venus, marte: mars } }
-function elementFor(sign){ if(['Aries','Leo','Sagitario'].includes(sign)) return 'Fuego'; if(['Tauro','Virgo','Capricornio'].includes(sign)) return 'Tierra'; if(['Géminis','Libra','Acuario'].includes(sign)) return 'Aire'; return 'Agua'; }
-function elementAdvice(el){ return {Fuego:'activar iniciativa sin quemarte',Tierra:'ordenar prioridades y sostener hábitos',Aire:'pensar claro y comunicar mejor',Agua:'escuchar emociones y cuidar vínculos'}[el]; }
-function archetype(el, type){ if(type==='compatibilidad') return {Fuego:'Alianza valiente',Tierra:'Vínculo estable',Aire:'Conexión mental',Agua:'Puente emocional'}[el]; if(type==='hoy') return {Fuego:'Chispa del día',Tierra:'Raíz del día',Aire:'Brújula mental',Agua:'Marea interior'}[el]; return {Fuego:'La Iniciadora',Tierra:'La Guardiana',Aire:'La Mensajera',Agua:'La Sensible'}[el]; }
-function parseAstro(text){ if(!text) return {}; const map={sol:['sol','sun','☉'],luna:['luna','moon','☽'],asc:['asc','ascendente','ac','ASC'],mercurio:['mercurio','mercury','☿'],venus:['venus','♀'],marte:['marte','mars','♂']}; const out={}; const lower=text.toLowerCase(); Object.entries(map).forEach(([k,keys])=>{ for(const key of keys){ const pos=lower.indexOf(key.toLowerCase()); if(pos>=0){ const slice=text.slice(pos,pos+80); const found=signs.find(s=>slice.toLowerCase().includes(s.toLowerCase())) || Object.entries(glyph).find(([s,g])=>slice.includes(g))?.[0]; if(found){ out[k]=found; break; } } } }); return out; }
-function buildReading(d){ const pos=simplePositions(d); const astro=parseAstro(d.astroText||''); const final={...pos,...astro}; const dominant=elementFor(final.sol); const type=d.readingType||'natal'; const title= type==='hoy' ? `Energía de hoy para ${d.name}` : type==='compatibilidad' ? `Compatibilidad de ${d.name}${d.otherName?' y '+d.otherName:''}` : `Carta natal de ${d.name}`;
-  const precision = Object.keys(astro).length ? 'Revisada con Astro.com manual' : (d.timeAccuracy==='alta'?'Base clara':'Base simbólica');
-  const aura = 72 + (hash(title)%24);
-  const message = type==='compatibilidad' ? `La clave está en ${elementAdvice(dominant)} dentro del vínculo.` : `Tu energía principal invita a ${elementAdvice(dominant)}.`;
-  const sections = [
-    {title:'Resumen claro', text:`${message} Sol en ${final.sol}, Luna en ${final.luna} y Ascendente en ${final.asc} crean una lectura centrada en ${dominant.toLowerCase()}.`},
-    {title:'Personalidad', text:`El Sol en ${final.sol} marca la forma en que expresas identidad, impulso y dirección vital.`},
-    {title:'Mundo emocional', text:`La Luna en ${final.luna} habla de cómo procesas emociones, seguridad y necesidades internas.`},
-    {title:'Cómo te muestras', text:`El Ascendente en ${final.asc} describe la primera impresión, el ritmo externo y cómo empiezas las cosas.`},
-    {title:'Plan útil', list:[`Activar: ${elementAdvice(dominant)}.`,`Soltar: exceso de ruido o exigencia.`,`Microacción: escribe una decisión pequeña que puedas hacer hoy.`]},
-    {title:'Nota de precisión', text:`Esta versión usa cálculo simbólico/aproximado. Para una carta profesional exacta, pega posiciones revisadas manualmente desde Astro.com en el modo avanzado.`}
-  ];
-  if(type==='compatibilidad') sections.splice(4,0,{title:'Compatibilidad', text:`La relación se lee como un puente entre ritmos. La recomendación es hablar desde claridad, cuidar expectativas y convertir la diferencia en colaboración.`});
-  return { id:'alaya-'+Date.now(), created:new Date().toISOString(), title, subtitle:`${d.city}, ${d.country} · ${d.birthDate} ${d.birthTime}`, data:d, positions:final, dominant, archetype:archetype(dominant,type), precision, aura, sections };
+function normalize(deg){ return ((deg % 360) + 360) % 360; }
+function round(value, places = 2){ const p = 10 ** places; return Math.round(value * p) / p; }
+function escapeHtml(value = ""){ return String(value).replace(/[&<>"]/g, char => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[char])); }
+function toast(message){ const el = document.createElement("div"); el.className = "toast"; el.textContent = message; document.body.append(el); setTimeout(() => el.remove(), 2600); }
+function route(id){
+  const target = document.getElementById(id) ? id : "inicio";
+  $$(".screen").forEach(screen => screen.classList.toggle("active", screen.id === target));
+  $$("[data-route]").forEach(link => link.classList.toggle("active", link.dataset.route === target));
+  history.replaceState(null, "", `#${target}`);
+  if(target === "historial") renderHistory();
+  if(target === "inicio") renderHome();
+  window.scrollTo({ top:0, behavior:"smooth" });
 }
-function renderWheel(r){ const keys=['sol','luna','asc','mercurio','venus','marte']; const items=keys.map((k,i)=>`<span class="planet" style="--a:${i*60}deg" title="${k}: ${r.positions[k]||'—'}">${planets[k]}</span>`).join(''); return `<div class="wheel-core"><b>${glyph[r.positions.sol]||'✦'}</b><small>${r.positions.sol}</small></div>${items}`; }
-function renderReading(r){ setStep(3); const tpl=$('#readingTemplate').content.cloneNode(true); $('[data-field="title"]',tpl).textContent=r.title; $('[data-field="subtitle"]',tpl).textContent=r.subtitle; $('[data-field="badges"]',tpl).innerHTML=[r.dominant,r.archetype,r.precision,`Aura ${r.aura}`].map(x=>`<span class="badge">${x}</span>`).join(''); $('[data-field="wheel"]',tpl).innerHTML=renderWheel(r); $('[data-field="sections"]',tpl).innerHTML=r.sections.map(s=>`<section class="result-section"><h3>${s.title}</h3>${s.text?`<p>${s.text}</p>`:''}${s.list?`<ul class="mini-list">${s.list.map(i=>`<li>${i}</li>`).join('')}</ul>`:''}</section>`).join(''); const slot=$('#resultSlot'); slot.innerHTML=''; slot.append(tpl); slot.dataset.reading=JSON.stringify(r); $('[data-action="save"]',slot).onclick=()=>saveReading(r); $('[data-action="pdf"]',slot).onclick=()=>window.print(); $('[data-action="copy"]',slot).onclick=()=>copyText(readingText(r)); $('[data-action="html"]',slot).onclick=()=>download(`alaya-carta-${r.id}.html`,htmlDoc(r),'text/html'); slot.scrollIntoView({behavior:'smooth',block:'start'}); }
-function readingText(r){ return `${r.title}\n${r.subtitle}\n\n${r.sections.map(s=>`${s.title}\n${s.text||''}${s.list?'\n- '+s.list.join('\n- '):''}`).join('\n\n')}`; }
-function htmlDoc(r){ return `<!doctype html><html lang="es"><meta charset="utf-8"><title>${r.title}</title><style>body{font-family:system-ui;margin:0;background:#080412;color:#fff8ec}.wrap{max-width:900px;margin:auto;padding:42px}.card{border:1px solid rgba(255,255,255,.18);border-radius:28px;background:rgba(255,255,255,.07);padding:24px;margin:16px 0}h1{font-size:48px;line-height:1}small{opacity:.7}@media print{body{background:#fff;color:#111}.card{border-color:#ddd;background:#fff}}</style><main class="wrap"><small>Alaya Astral IA · ${VERSION}</small><h1>${r.title}</h1><p>${r.subtitle}</p><p><b>${r.dominant}</b> · ${r.archetype} · ${r.precision}</p>${r.sections.map(s=>`<section class="card"><h2>${s.title}</h2><p>${s.text||''}</p>${s.list?`<ul>${s.list.map(i=>`<li>${i}</li>`).join('')}</ul>`:''}</section>`).join('')}</main>`; }
-function download(name, content, type='application/json'){ const blob=new Blob([content],{type}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
-function saveReading(r){ const h=read(STORE.history,[]); const exists=h.some(x=>x.id===r.id); write(STORE.history, exists?h:[r,...h]); renderHome(); renderHistory(); toast('Carta guardada'); }
-function renderHome(){ const h=read(STORE.history,[]); const last=h[0]; $('#lastCard').innerHTML = last ? `<p class="eyebrow">Última carta</p><h2>${last.title}</h2><p>${last.subtitle}</p><div class="badges"><span class="badge">${last.dominant}</span><span class="badge">Aura ${last.aura}</span></div><button class="btn secondary small" id="openLast">Abrir</button>` : `<p class="eyebrow">Última carta</p><h2>Todavía no hay cartas</h2><p>Crea una carta para verla aquí y guardarla en el historial.</p>`; if($('#openLast')) $('#openLast').onclick=()=>{route('crear');renderReading(last)}; }
-function renderHistory(){ const h=read(STORE.history,[]); $('#historyList').innerHTML = h.length ? h.map(r=>`<article class="history-item"><div><h3>${r.title}</h3><p>${new Date(r.created).toLocaleDateString()} · ${r.dominant} · Aura ${r.aura}</p></div><div class="actions"><button class="btn secondary small" data-open="${r.id}">Abrir</button><button class="btn ghost small" data-delete="${r.id}">Borrar</button></div></article>`).join('') : `<div class="card" style="padding:24px">No hay cartas guardadas todavía.</div>`; $$('[data-open]').forEach(b=>b.onclick=()=>{ const r=read(STORE.history,[]).find(x=>x.id===b.dataset.open); route('crear'); renderReading(r); }); $$('[data-delete]').forEach(b=>b.onclick=()=>{ write(STORE.history, read(STORE.history,[]).filter(x=>x.id!==b.dataset.delete)); renderHistory(); renderHome(); toast('Carta borrada'); }); }
-function copyText(t){ navigator.clipboard?.writeText(t).then(()=>toast('Copiado')).catch(()=>toast('No se pudo copiar')); }
-function applySettings(){ const s=read(STORE.settings,{}); document.body.classList.toggle('comfort',!!s.comfort); document.body.classList.toggle('contrast',!!s.contrast); $('#comfortToggle').checked=!!s.comfort; $('#contrastToggle').checked=!!s.contrast; }
-function saveDraft(){ write(STORE.draft, formData()); }
-function loadDraft(){ const d=read(STORE.draft,null); if(!d) return; Object.entries(d).forEach(([k,v])=>{ const el=$(`[name="${k}"]`)||$('#'+k); if(el){ if(el.type==='radio'){ $$(`[name="${k}"]`).forEach(r=>r.checked=r.value===v); } else el.value=v; } }); updateChoices(); }
-function updateChoices(){ $$('.choice').forEach(c=>c.classList.toggle('selected',$('input',c).checked)); const type=$('input[name="readingType"]:checked')?.value; $('#compatBox').classList.toggle('hidden',type!=='compatibilidad'); }
-function createDemo(){ const demo={name:'Atenea',birthDate:'2008-07-21',birthTime:'12:30',city:'Barcelona',country:'España',timeAccuracy:'media',readingType:'natal',intention:'Quiero una lectura clara, bonita y fácil de entender.'}; Object.entries(demo).forEach(([k,v])=>{ const el=$(`[name="${k}"]`); if(el){ if(el.type==='radio') $$(`[name="${k}"]`).forEach(r=>r.checked=r.value===v); else el.value=v; } }); updateChoices(); route('crear'); const r=buildReading(demo); renderReading(r); saveReading(r); toast('Demo creada y guardada'); }
-function bind(){ document.addEventListener('click',e=>{ const r=e.target.closest('[data-route]'); if(r){ e.preventDefault(); route(r.dataset.route); } const n=e.target.closest('[data-next]'); if(n){ if(n.dataset.next==='2' && !requiredOk()) return; setStep(n.dataset.next); } const s=e.target.closest('[data-step]'); if(s){ setStep(s.dataset.step); } }); $('#chartForm').addEventListener('submit',e=>{ e.preventDefault(); if(!requiredOk()) return; const d=formData(); saveDraft(); const r=buildReading(d); renderReading(r); }); $('#chartForm').addEventListener('input',()=>{ saveDraft(); updateChoices(); }); $('#demoBtn').onclick=createDemo; $('#clearHistoryBtn').onclick=()=>{ if(confirm('¿Borrar todas las cartas guardadas?')){ write(STORE.history,[]); renderHistory(); renderHome(); toast('Historial borrado'); } }; $('#exportBtn').onclick=()=>download('alaya-historial-v67.json',JSON.stringify(read(STORE.history,[]),null,2)); $('#importFile').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ try{ const arr=JSON.parse(rd.result); if(!Array.isArray(arr)) throw new Error('Formato inválido'); write(STORE.history,arr); renderHistory(); renderHome(); toast('Historial importado'); }catch{ toast('Archivo no válido'); } }; rd.readAsText(f); }; $('#comfortToggle').onchange=e=>{ const s=read(STORE.settings,{}); s.comfort=e.target.checked; write(STORE.settings,s); applySettings(); }; $('#contrastToggle').onchange=e=>{ const s=read(STORE.settings,{}); s.contrast=e.target.checked; write(STORE.settings,s); applySettings(); }; }
-let deferredPrompt=null; window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; $('#installBtn')?.classList.remove('hidden'); });
-document.addEventListener('DOMContentLoaded',()=>{ bind(); loadDraft(); applySettings(); renderHome(); renderHistory(); updateChoices(); if(location.hash) route(location.hash.slice(1)); $('#installBtn').onclick=async()=>{ if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; } }; if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+function setStep(step){
+  $$(".step-page").forEach(page => page.classList.toggle("active", page.dataset.page === String(step)));
+  $$(".step-pill").forEach(button => button.classList.toggle("active", button.dataset.step === String(step)));
+}
+function formData(){ return Object.fromEntries(new FormData($("#chartForm")).entries()); }
+function setupUtcOptions(){
+  const select = $("#utcOffset");
+  const options = [];
+  for(let half = -24; half <= 28; half++){
+    const value = half / 2;
+    const sign = value >= 0 ? "+" : "−";
+    const abs = Math.abs(value);
+    const label = `UTC${sign}${String(Math.floor(abs)).padStart(2,"0")}:${abs % 1 ? "30" : "00"}`;
+    options.push(`<option value="${value}">${label}</option>`);
+  }
+  select.innerHTML = options.join("");
+  select.value = String(-new Date().getTimezoneOffset() / 60);
+}
+function requiredOk(){
+  const data = formData();
+  const fields = [
+    ["name","nombre"],["birthDate","fecha"],["birthTime","hora"],["city","ciudad"],["country","país"],
+    ["lat","latitud"],["lon","longitud"],["utcOffset","UTC"]
+  ];
+  const missing = fields.filter(([key]) => data[key] === undefined || String(data[key]).trim() === "").map(([,label]) => label);
+  if(missing.length){ toast(`Falta: ${missing.join(", ")}`); return false; }
+  const lat = Number(data.lat), lon = Number(data.lon);
+  if(!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180){
+    toast("Revisa latitud y longitud"); return false;
+  }
+  return true;
+}
+function localBirthToUtc(data){
+  const [year, month, day] = data.birthDate.split("-").map(Number);
+  const [hour, minute] = data.birthTime.split(":").map(Number);
+  const utcMillis = Date.UTC(year, month - 1, day, hour, minute) - Number(data.utcOffset) * 3600000;
+  return new Date(utcMillis);
+}
+function longitudeToPosition(longitude){
+  const value = normalize(longitude);
+  const signIndex = Math.floor(value / 30);
+  const within = value % 30;
+  const degree = Math.floor(within);
+  const minutes = Math.floor((within - degree) * 60);
+  return { longitude:value, sign:signs[signIndex], signIndex, degree, minutes, label:`${degree}° ${String(minutes).padStart(2,"0")}′ ${signs[signIndex]}` };
+}
+function apparentLongitude(bodyName, date){
+  if(bodyName === "Moon") return normalize(Astronomy.EclipticGeoMoon(date).lon);
+  const vector = Astronomy.GeoVector(Astronomy.Body[bodyName], date, true);
+  return normalize(Astronomy.Ecliptic(vector).elon);
+}
+function julianDate(date){ return date.getTime() / 86400000 + 2440587.5; }
+function meanObliquity(date){
+  const t = (julianDate(date) - 2451545.0) / 36525;
+  return 23.439291111 - 0.013004167 * t - 0.000000164 * t * t + 0.000000504 * t * t * t;
+}
+function greenwichSidereal(date){
+  const jd = julianDate(date);
+  const t = (jd - 2451545.0) / 36525;
+  return normalize(280.46061837 + 360.98564736629 * (jd - 2451545) + 0.000387933 * t * t - t * t * t / 38710000);
+}
+function calculateAscendant(date, latitude, longitude){
+  const radians = Math.PI / 180;
+  const theta = normalize(greenwichSidereal(date) + longitude) * radians;
+  const phi = Math.max(-89.5, Math.min(89.5, latitude)) * radians;
+  const epsilon = meanObliquity(date) * radians;
+  const lambda = Math.atan2(-Math.cos(theta), Math.sin(theta) * Math.cos(epsilon) + Math.tan(phi) * Math.sin(epsilon)) / radians + 180;
+  return normalize(lambda);
+}
+function parseImportedPositions(text){
+  if(!text) return {};
+  const aliases = {
+    sun:["sol","sun","☉"],moon:["luna","moon","☽"],mercury:["mercurio","mercury","☿"],
+    venus:["venus","♀"],mars:["marte","mars","♂"],jupiter:["júpiter","jupiter","♃"],
+    saturn:["saturno","saturn","♄"],uranus:["urano","uranus","♅"],neptune:["neptuno","neptune","♆"],
+    pluto:["plutón","pluton","pluto","♇"],asc:["ascendente","asc","ac"]
+  };
+  const result = {};
+  for(const [key, names] of Object.entries(aliases)){
+    for(const name of names){
+      const start = text.toLowerCase().indexOf(name.toLowerCase());
+      if(start < 0) continue;
+      const sample = text.slice(start, start + 90);
+      const signIndex = signs.findIndex(sign => sample.toLowerCase().includes(sign.toLowerCase()));
+      if(signIndex < 0) continue;
+      const degreeMatch = sample.match(/(\d{1,2})(?:\s*°|\s+deg|\s+)/i);
+      const minuteMatch = sample.match(/°\s*(\d{1,2})/);
+      const degree = degreeMatch ? Math.min(29, Number(degreeMatch[1])) : 15;
+      const minute = minuteMatch ? Math.min(59, Number(minuteMatch[1])) : 0;
+      result[key] = signIndex * 30 + degree + minute / 60;
+      break;
+    }
+  }
+  return result;
+}
+function calculateHouses(ascendant, system){
+  const first = system === "whole" ? Math.floor(ascendant / 30) * 30 : ascendant;
+  return Array.from({ length:12 }, (_, index) => normalize(first + index * 30));
+}
+function houseFor(longitude, cusps){
+  for(let index = 0; index < 12; index++){
+    const span = normalize(cusps[(index + 1) % 12] - cusps[index]) || 30;
+    const distance = normalize(longitude - cusps[index]);
+    if(distance < span) return index + 1;
+  }
+  return 1;
+}
+function calculateAspects(positions){
+  const keys = planetDefs.map(([key]) => key);
+  const aspects = [];
+  for(let i = 0; i < keys.length; i++){
+    for(let j = i + 1; j < keys.length; j++){
+      const separationRaw = Math.abs(positions[keys[i]].longitude - positions[keys[j]].longitude);
+      const separation = Math.min(separationRaw, 360 - separationRaw);
+      for(const definition of aspectDefs){
+        const orb = Math.abs(separation - definition.angle);
+        if(orb <= definition.orb){
+          aspects.push({ ...definition, from:keys[i], to:keys[j], separation, orb });
+          break;
+        }
+      }
+    }
+  }
+  return aspects.sort((a,b) => a.orb - b.orb);
+}
+function dominantElement(positions){
+  const elements = ["Fuego","Tierra","Aire","Agua"];
+  const scores = [0,0,0,0];
+  ["sun","moon","mercury","venus","mars","jupiter","saturn","asc"].forEach(key => {
+    const signIndex = positions[key].signIndex;
+    scores[signIndex % 4] += ["sun","moon","asc"].includes(key) ? 2 : 1;
+  });
+  return elements[scores.indexOf(Math.max(...scores))];
+}
+function nameFor(key){ return key === "asc" ? "Ascendente" : planetDefs.find(([id]) => id === key)?.[1] || key; }
+function glyphFor(key){ return key === "asc" ? "ASC" : planetDefs.find(([id]) => id === key)?.[2] || "•"; }
+function buildReading(data){
+  if(typeof Astronomy === "undefined") throw new Error("El módulo de cálculo no se ha cargado.");
+  const date = localBirthToUtc(data);
+  const imported = parseImportedPositions(data.astroText);
+  const positions = {};
+  for(const [key,, ,body] of planetDefs){
+    const longitude = imported[key] ?? apparentLongitude(body, date);
+    positions[key] = { ...longitudeToPosition(longitude), source:imported[key] !== undefined ? "importada" : "calculada" };
+  }
+  const ascLongitude = imported.asc ?? calculateAscendant(date, Number(data.lat), Number(data.lon));
+  positions.asc = { ...longitudeToPosition(ascLongitude), source:imported.asc !== undefined ? "importada" : "aproximada" };
+  const cusps = calculateHouses(ascLongitude, data.houses);
+  Object.values(positions).forEach(position => { position.house = houseFor(position.longitude, cusps); });
+  const aspects = calculateAspects(positions);
+  const element = dominantElement(positions);
+  const houseLabel = data.houses === "whole" ? "Signo completo" : "Casas iguales";
+  const method = Object.keys(imported).length ? `${Object.keys(imported).length} posiciones revisadas` : "Cálculo astral local";
+  const sections = [
+    { title:`Sol en ${positions.sun.sign}`, text:`Tu identidad central se expresa con cualidades de ${positions.sun.sign}. En casa ${positions.sun.house}, el foco vital se dirige a los temas de esa área de experiencia.` },
+    { title:`Luna en ${positions.moon.sign}`, text:`La Luna describe necesidades emocionales y formas de buscar seguridad. Su casa ${positions.moon.house} muestra dónde se activa con más facilidad.` },
+    { title:`Ascendente en ${positions.asc.sign}`, text:`El Ascendente aproxima tu forma de entrar en las situaciones y organiza las casas. Si la hora no es exacta, esta posición puede cambiar.` },
+    { title:`Elemento ${element}`, text:`La distribución de los puntos personales da mayor peso a ${element.toLowerCase()}. Úsalo como una tendencia de lectura, no como una etiqueta cerrada.` }
+  ];
+  if(aspects[0]) sections.push({ title:`Aspecto dominante: ${aspects[0].name}`, text:`${nameFor(aspects[0].from)} y ${nameFor(aspects[0].to)} forman una ${aspects[0].name.toLowerCase()} con un orbe de ${round(aspects[0].orb,1)}°. Es uno de los vínculos geométricos más precisos de esta carta.` });
+  return {
+    id:`alaya-${Date.now()}`, created:new Date().toISOString(), version:VERSION,
+    title:`Carta natal de ${data.name}`, subtitle:`${data.city}, ${data.country} · ${data.birthDate} · ${data.birthTime}`,
+    data, utcDate:date.toISOString(), positions, cusps, aspects, element, houseLabel, method, sections
+  };
+}
+function polar(cx, cy, radius, degrees){
+  const angle = (degrees - 90) * Math.PI / 180;
+  return { x:cx + radius * Math.cos(angle), y:cy + radius * Math.sin(angle) };
+}
+function svgLine(radiusA, radiusB, degree, className){
+  const a = polar(300,300,radiusA,degree), b = polar(300,300,radiusB,degree);
+  return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="${className}"/>`;
+}
+function renderWheel(reading){
+  const rotation = -reading.positions.asc.longitude;
+  const zodiacLines = Array.from({ length:12 }, (_,i) => svgLine(210,274,rotation + i * 30,"wheel-line")).join("");
+  const zodiacLabels = signs.map((_,i) => {
+    const point = polar(300,300,242,rotation + i * 30 + 15);
+    return `<text x="${point.x}" y="${point.y}" class="zodiac-glyph">${signGlyph[i]}</text>`;
+  }).join("");
+  const houseLines = reading.cusps.map(cusp => svgLine(72,210,rotation + cusp,"house-line")).join("");
+  const houseLabels = reading.cusps.map((cusp,i) => {
+    const next = reading.cusps[(i + 1) % 12];
+    const span = normalize(next - cusp) || 30;
+    const point = polar(300,300,192,rotation + cusp + span / 2);
+    return `<text x="${point.x}" y="${point.y}" class="house-number">${i + 1}</text>`;
+  }).join("");
+  const aspectLines = reading.aspects.slice(0,18).map(aspect => {
+    const a = polar(300,300,105,rotation + reading.positions[aspect.from].longitude);
+    const b = polar(300,300,105,rotation + reading.positions[aspect.to].longitude);
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="aspect-line aspect-${aspect.tone}"/>`;
+  }).join("");
+  const markerKeys = ["sun","moon","mercury","venus","mars","jupiter","saturn","uranus","neptune","pluto"];
+  const markers = markerKeys.map((key,index) => {
+    const position = reading.positions[key];
+    const radius = 132 + (index % 2) * 25;
+    const point = polar(300,300,radius,rotation + position.longitude);
+    return `<g><circle cx="${point.x}" cy="${point.y}" r="15" class="planet-dot"/><text x="${point.x}" y="${point.y + 1}" class="planet-glyph">${glyphFor(key)}</text><title>${nameFor(key)}: ${position.label}, casa ${position.house}</title></g>`;
+  }).join("");
+  const ascPoint = polar(300,300,278,0);
+  return `<svg class="natal-wheel" viewBox="0 0 600 600" role="img" aria-label="Rueda natal de ${escapeHtml(reading.data.name)}">
+    <circle cx="300" cy="300" r="278" class="wheel-bg"/><circle cx="300" cy="300" r="210" class="wheel-ring"/><circle cx="300" cy="300" r="72" class="wheel-ring"/>
+    ${zodiacLines}${zodiacLabels}${houseLines}${houseLabels}${aspectLines}${markers}
+    <text x="${ascPoint.x - 16}" y="${ascPoint.y + 4}" class="axis-label">ASC</text>
+  </svg>`;
+}
+function renderBigThree(reading){
+  const trio = ["sun","moon","asc"];
+  return `<div class="signature"><p class="kicker">Firma elemental</p><h2>${reading.element}</h2><p>${reading.houseLabel} · ${reading.method}</p></div>` + trio.map(key => {
+    const position = reading.positions[key];
+    return `<article class="big-three-card"><span>${glyphFor(key)}</span><div><b>${nameFor(key)}</b><small>Casa ${position.house}</small></div><strong>${position.sign}<small>${position.degree}° ${String(position.minutes).padStart(2,"0")}′</small></strong></article>`;
+  }).join("");
+}
+function renderPositions(reading){
+  const keys = ["sun","moon","mercury","venus","mars","jupiter","saturn","uranus","neptune","pluto","asc"];
+  return `<div class="planet-row header"><span>Punto</span><span>Posición</span><span>Casa</span><span>Fuente</span></div>` + keys.map(key => {
+    const position = reading.positions[key];
+    return `<div class="planet-row"><span class="planet-name"><span>${glyphFor(key)}</span>${nameFor(key)}</span><span>${position.degree}° ${String(position.minutes).padStart(2,"0")}′ ${position.sign}</span><span>${position.house}</span><span>${position.source}</span></div>`;
+  }).join("");
+}
+function renderAspects(reading){
+  if(!reading.aspects.length) return "<p>No se encontraron aspectos mayores dentro de los orbes configurados.</p>";
+  return reading.aspects.slice(0,12).map(aspect => `<article class="aspect-card"><span><b>${nameFor(aspect.from)}</b><small>${reading.positions[aspect.from].sign}</small></span><span>${aspect.symbol}</span><span><b>${nameFor(aspect.to)}</b><small>${aspect.name} · orbe ${round(aspect.orb,1)}°</small></span></article>`).join("");
+}
+function renderMethod(reading){
+  return `<b>Método y precisión</b><p>Posiciones tropicales geocéntricas calculadas para ${new Date(reading.utcDate).toLocaleString("es-ES",{ timeZone:"UTC" })} UTC. El Ascendente se obtiene mediante tiempo sidéreo local. Sistema de casas: ${reading.houseLabel}. La exactitud depende especialmente de la hora, el desfase UTC y las coordenadas introducidas.</p>`;
+}
+function renderReading(reading){
+  setStep(3);
+  const template = $("#readingTemplate").content.cloneNode(true);
+  $('[data-field="title"]',template).textContent = reading.title;
+  $('[data-field="subtitle"]',template).textContent = reading.subtitle;
+  $('[data-field="badges"]',template).innerHTML = [reading.element,reading.houseLabel,reading.method].map(label => `<span class="badge">${escapeHtml(label)}</span>`).join("");
+  $('[data-field="wheel"]',template).innerHTML = renderWheel(reading);
+  $('[data-field="bigThree"]',template).innerHTML = renderBigThree(reading);
+  $('[data-field="positions"]',template).innerHTML = renderPositions(reading);
+  $('[data-field="method"]',template).innerHTML = renderMethod(reading);
+  $('[data-field="aspects"]',template).innerHTML = renderAspects(reading);
+  $('[data-field="sections"]',template).innerHTML = reading.sections.map(section => `<article class="reading-section"><h3>${escapeHtml(section.title)}</h3><p>${escapeHtml(section.text)}</p></article>`).join("");
+  const slot = $("#resultSlot");
+  slot.innerHTML = "";
+  slot.append(template);
+  slot.dataset.reading = JSON.stringify(reading);
+  const article = $(".reading",slot);
+  $('[data-action="save"]',article).onclick = () => saveReading(JSON.parse(slot.dataset.reading));
+  $('[data-action="pdf"]',article).onclick = () => window.print();
+  $('[data-action="copy"]',article).onclick = () => copyText(readingText(JSON.parse(slot.dataset.reading)));
+  $('[data-action="html"]',article).onclick = () => {
+    const latest = JSON.parse(slot.dataset.reading);
+    download(`alaya-${latest.data.name.toLowerCase().replace(/\s+/g,"-")}.html`, htmlDoc(latest), "text/html");
+  };
+  slot.scrollIntoView({ behavior:"smooth", block:"start" });
+}
+function readingText(reading){
+  const positions = Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n");
+  const sections = reading.sections.map(section => `${section.title}\n${section.text}`).join("\n\n");
+  return `${reading.title}\n${reading.subtitle}\n\n${positions}\n\n${sections}`;
+}
+function htmlDoc(reading){
+  return `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(reading.title)}</title><style>body{font:16px/1.6 system-ui;max-width:900px;margin:auto;padding:32px;color:#303249;background:#fffefa}h1,h2{font-family:Georgia,serif;color:#496b96}.brand{letter-spacing:.18em;color:#a58035}.card{border:1px solid #ded7e8;border-radius:16px;padding:18px;margin:14px 0}.muted{color:#74758a}@media print{body{padding:0}}</style><p class="brand">ALAYA ASTRO</p><h1>${escapeHtml(reading.title)}</h1><p class="muted">${escapeHtml(reading.subtitle)}</p><div class="card"><h2>Posiciones</h2><pre>${escapeHtml(Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n"))}</pre></div>${reading.sections.map(section => `<section class="card"><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.text)}</p></section>`).join("")}</html>`;
+}
+function download(name, content, type = "application/json"){
+  const blob = new Blob([content],{ type });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob); link.download = name; link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href),1000);
+}
+function copyText(text){ navigator.clipboard?.writeText(text).then(() => toast("Texto copiado")).catch(() => toast("No se pudo copiar")); }
+function saveReading(reading){
+  const history = read(STORE.history,[]);
+  const index = history.findIndex(item => item.id === reading.id);
+  if(index >= 0) history[index] = reading; else history.unshift(reading);
+  write(STORE.history,history); renderHome(); renderHistory(); toast("Carta guardada");
+}
+function renderHome(){
+  const latest = read(STORE.history,[])[0];
+  $("#lastCard").innerHTML = latest
+    ? `<p class="kicker">Última carta</p><h2>${escapeHtml(latest.title)}</h2><p>${escapeHtml(latest.subtitle)}</p><button class="text-link" id="openLast">Abrir carta <span>→</span></button>`
+    : `<p class="kicker">Tu espacio</p><h2>Aún no hay cartas guardadas</h2><p>Tu próxima carta aparecerá aquí.</p>`;
+  if($("#openLast")) $("#openLast").onclick = () => { route("crear"); renderReading(latest); };
+}
+function renderHistory(){
+  const history = read(STORE.history,[]);
+  $("#historyList").innerHTML = history.length ? history.map(reading => `<article class="history-item"><p class="kicker">${new Date(reading.created).toLocaleDateString("es-ES")}</p><h2>${escapeHtml(reading.title)}</h2><p>${escapeHtml(reading.subtitle)}<br>${reading.element} · ${reading.houseLabel}</p><div class="actions"><button class="button secondary small" data-open="${reading.id}">Abrir</button><button class="button quiet small" data-delete="${reading.id}">Borrar</button></div></article>`).join("") : `<article class="history-item"><h2>No hay cartas guardadas</h2><p>Crea una carta y pulsa Guardar.</p></article>`;
+  $$("[data-open]").forEach(button => button.onclick = () => { const reading = read(STORE.history,[]).find(item => item.id === button.dataset.open); route("crear"); renderReading(reading); });
+  $$("[data-delete]").forEach(button => button.onclick = () => { write(STORE.history,read(STORE.history,[]).filter(item => item.id !== button.dataset.delete)); renderHistory(); renderHome(); });
+}
+function saveDraft(){ write(STORE.draft,formData()); }
+function loadDraft(){
+  const draft = read(STORE.draft,null); if(!draft) return;
+  Object.entries(draft).forEach(([key,value]) => {
+    const controls = $$(`[name="${key}"]`);
+    controls.forEach(control => { if(control.type === "radio") control.checked = control.value === value; else control.value = value; });
+  });
+  updateChoices();
+}
+function updateChoices(){ $$(".choice").forEach(choice => choice.classList.toggle("selected",$("input",choice)?.checked)); }
+function applySettings(){
+  const settings = read(STORE.settings,{});
+  document.body.classList.toggle("comfort",!!settings.comfort);
+  document.body.classList.toggle("contrast",!!settings.contrast);
+  $("#comfortToggle").checked = !!settings.comfort; $("#contrastToggle").checked = !!settings.contrast;
+}
+function createDemo(){
+  const demo = { name:"Atenea",birthDate:"1992-07-21",birthTime:"12:30",city:"Barcelona",country:"España",lat:"41.3874",lon:"2.1686",utcOffset:"2",timeAccuracy:"exacta",houses:"whole",readingType:"natal",intention:"Comprender mis talentos y mi manera de relacionarme." };
+  Object.entries(demo).forEach(([key,value]) => $$(`[name="${key}"]`).forEach(control => { if(control.type === "radio") control.checked = control.value === value; else control.value = value; }));
+  updateChoices(); route("crear"); renderReading(buildReading(demo));
+}
+function bind(){
+  document.addEventListener("click",event => {
+    const routeButton = event.target.closest("[data-route]");
+    if(routeButton){ event.preventDefault(); route(routeButton.dataset.route); }
+    const next = event.target.closest("[data-next]");
+    if(next){ if(next.dataset.next === "2" && !requiredOk()) return; setStep(next.dataset.next); }
+    const step = event.target.closest("[data-step]");
+    if(step) setStep(step.dataset.step);
+  });
+  $("#chartForm").addEventListener("submit",event => {
+    event.preventDefault(); if(!requiredOk()) return;
+    try { const data = formData(); saveDraft(); renderReading(buildReading(data)); }
+    catch(error){ console.error(error); toast(error.message || "No se pudo calcular la carta"); }
+  });
+  $("#chartForm").addEventListener("input",() => { saveDraft(); updateChoices(); });
+  $$("[data-demo]").forEach(button => button.onclick = createDemo);
+  $("#welcomeStart").onclick = () => {
+    const name = $("#welcomeName").value.trim();
+    if(name) $("#name").value = name;
+    localStorage.setItem("alaya_welcome_seen","1");
+    $("#welcomeModal").classList.add("hidden");
+    if(name) saveDraft();
+  };
+  $("#welcomeSkip").onclick = () => {
+    localStorage.setItem("alaya_welcome_seen","1");
+    $("#welcomeModal").classList.add("hidden");
+  };
+  $("#clearHistoryBtn").onclick = () => { if(confirm("¿Borrar todas las cartas guardadas?")){ write(STORE.history,[]); renderHistory(); renderHome(); } };
+  $("#exportBtn").onclick = () => download("alaya-cartas-v7.json",JSON.stringify(read(STORE.history,[]),null,2));
+  $("#importFile").onchange = event => {
+    const file = event.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { try { const data = JSON.parse(reader.result); if(!Array.isArray(data)) throw new Error(); write(STORE.history,data); renderHistory(); renderHome(); toast("Cartas importadas"); } catch { toast("Archivo no válido"); } };
+    reader.readAsText(file);
+  };
+  $("#comfortToggle").onchange = event => { const settings = read(STORE.settings,{}); settings.comfort = event.target.checked; write(STORE.settings,settings); applySettings(); };
+  $("#contrastToggle").onchange = event => { const settings = read(STORE.settings,{}); settings.contrast = event.target.checked; write(STORE.settings,settings); applySettings(); };
+}
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt",event => { event.preventDefault(); deferredPrompt = event; $("#installBtn").classList.remove("hidden"); });
+document.addEventListener("DOMContentLoaded",() => {
+  setupUtcOptions(); bind(); loadDraft(); applySettings(); renderHome(); renderHistory(); updateChoices();
+  route(location.hash.slice(1) || "inicio");
+  const install = async () => {
+    if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt = null; }
+    else toast("La instalación aparecerá cuando el navegador la permita");
+  };
+  $("#installBtn").onclick = install;
+  $("#installQuick").onclick = install;
+  if(!localStorage.getItem("alaya_welcome_seen")) $("#welcomeModal").classList.remove("hidden");
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+});

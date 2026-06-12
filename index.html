@@ -3,249 +3,224 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#090414" />
-  <meta name="description" content="Alaya Astral IA v6.7 Clarity: crear una carta astral en 3 pasos, con modo simple, PDF profesional, historial y Astro.com manual opcional." />
-  <title>Alaya Astral IA v6.7 Clarity</title>
+  <meta name="theme-color" content="#f8f5ff" />
+  <meta name="description" content="Alaya: carta natal, rueda astrológica, posiciones, casas, aspectos y guía personal." />
+  <title>Alaya · Astrología personal</title>
   <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/favicon-64.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=7.1.0" />
 </head>
 <body>
-  <div class="stars" aria-hidden="true"></div>
+  <div class="sky-decoration" aria-hidden="true"></div>
 
-  <header class="topbar">
-    <a class="brand" href="#inicio" data-route="inicio" aria-label="Ir al inicio">
-      <img src="icons/icon-192.png" alt="" />
-      <span><b>Alaya Astral IA</b><small>v6.7 Clarity</small></span>
+  <header class="site-header">
+    <button id="installBtn" class="icon-button hidden" aria-label="Instalar aplicación">↓</button>
+    <a class="brand" href="#inicio" data-route="inicio" aria-label="Alaya Astro, inicio">
+      <img src="assets/alaya-astro.svg" alt="Alaya Astro" />
     </a>
-    <nav class="nav desktop" aria-label="Navegación principal">
-      <a href="#inicio" data-route="inicio">Inicio</a>
-      <a href="#crear" data-route="crear">Crear carta</a>
-      <a href="#historial" data-route="historial">Historial</a>
-      <a href="#ajustes" data-route="ajustes">Ajustes</a>
-    </nav>
-    <button id="installBtn" class="btn small ghost hidden">Instalar</button>
+    <button class="icon-button" data-route="ajustes" aria-label="Abrir ajustes">⚙</button>
   </header>
 
   <main id="app">
     <section id="inicio" class="screen active">
-      <article class="hero card glow">
-        <p class="eyebrow">Modo simple activado</p>
-        <h1>Crea tu carta astral sin perderte.</h1>
-        <p class="lead">Ahora Alaya funciona en 3 pasos claros: datos de nacimiento, intención y resultado. Lo avanzado queda oculto.</p>
-        <div class="hero-actions">
-          <button class="btn primary big" data-route="crear">Crear mi carta</button>
-          <button class="btn secondary" id="demoBtn">Probar con demo</button>
+      <article class="premium-hero">
+        <div>
+          <p class="eyebrow">Bienvenida al universo Alaya</p>
+          <h1>Explora tu cielo con una experiencia clara y luminosa.</h1>
+          <p>Cosmograma, posiciones, casas, aspectos y biblioteca astral reunidos en un espacio visual y privado.</p>
+          <div class="status-chips"><span>✦ Cálculo astral activo</span><span>⌖ Coordenadas precisas</span><span>▣ PWA instalable</span></div>
         </div>
-        <div class="quick-steps">
-          <div><b>1</b><span>Escribe tus datos</span></div>
-          <div><b>2</b><span>Elige una intención</span></div>
-          <div><b>3</b><span>Genera y descarga</span></div>
+        <img src="assets/alaya-holistics.svg" alt="Alaya Holistics" />
+      </article>
+
+      <div class="quick-actions" aria-label="Acciones rápidas">
+        <button class="quick-action primary" data-route="crear">✦ Primera carta</button>
+        <button class="quick-action" data-demo>☆ Demo rápida</button>
+        <button class="quick-action" data-route="historial">▣ Biblioteca</button>
+        <button class="quick-action" data-route="aprender">◇ Guía astral</button>
+        <button class="quick-action" id="installQuick">↓ Instalar</button>
+        <button class="quick-action" data-route="ajustes">⚙ Ajustes</button>
+      </div>
+
+      <div class="section-label"><p class="eyebrow">Mapa Alaya Astro</p><h2>Todo tu cielo en un vistazo</h2></div>
+
+      <nav class="module-menu" aria-label="Herramientas de astrología">
+        <button class="module active" data-route="crear"><span>◎</span><b>Cosmograma</b><small>Todo de un vistazo</small></button>
+        <button class="module" data-route="crear"><span>☉</span><b>Carta natal</b><small>Rueda e informe completo</small></button>
+        <button class="module" data-route="aprender" data-topic="planetas"><span>♃</span><b>Planetas</b><small>Funciones, signos y grados</small></button>
+        <button class="module" data-route="aprender" data-topic="casas"><span>⌂</span><b>Casas</b><small>Doce áreas de experiencia</small></button>
+        <button class="module" data-route="aprender" data-topic="aspectos"><span>△</span><b>Aspectos</b><small>Dinámicas entre planetas</small></button>
+        <button class="module" data-route="crear"><span>↻</span><b>Momento actual</b><small>Clima del presente</small></button>
+        <button class="module" data-route="historial"><span>☆</span><b>Biblioteca</b><small>Cartas guardadas y PDF</small></button>
+        <button class="module" data-route="ajustes"><span>⚙</span><b>Centro</b><small>Privacidad y preferencias</small></button>
+      </nav>
+
+      <article class="consult-card">
+        <div class="consult-copy">
+          <p class="eyebrow">Carta astral completa</p>
+          <h2>Descubre la arquitectura de tu cielo</h2>
+          <p>Genera la rueda, consulta posiciones, casas y aspectos, y recibe una lectura integrada que permanece en tu dispositivo.</p>
+          <div class="actions">
+            <button class="button primary large" data-route="crear">Crear mi carta</button>
+            <button class="button soft" data-demo>Ver una demostración</button>
+          </div>
+          <div class="privacy-note"><span>✦</span> Cálculo local · Datos privados · Informe imprimible</div>
+        </div>
+        <div class="celestial-preview" aria-hidden="true">
+          <div class="preview-ring ring-a"><i>☉</i></div>
+          <div class="preview-ring ring-b"><i>☽</i></div>
+          <img src="assets/alaya-astro.svg" alt="Alaya Astro" />
         </div>
       </article>
 
-      <section class="two-col">
-        <article class="card">
-          <p class="eyebrow">Qué hace esta versión</p>
-          <h2>Menos items, más claridad</h2>
-          <p>He reducido la app a lo esencial para que se entienda al instante. Hay solo tres lecturas principales y un modo avanzado plegado.</p>
+      <section class="home-grid">
+        <article class="info-card" id="lastCard">
+          <span class="card-icon">☆</span><p class="eyebrow">Tu archivo</p><h2>Aún no hay cartas guardadas</h2><p>Tu próxima carta aparecerá aquí.</p>
         </article>
-        <article class="card" id="lastCard">
-          <p class="eyebrow">Última carta</p>
-          <h2>Todavía no hay cartas</h2>
-          <p>Crea una carta para verla aquí y guardarla en el historial.</p>
+        <article class="info-card">
+          <span class="card-icon">◎</span><p class="eyebrow">Precisión</p><h2>Coordenadas y tiempo universal</h2><p>La fecha, la hora local, la latitud, la longitud y el desfase horario sitúan el cielo de nacimiento.</p>
         </article>
+        <article class="info-card">
+          <span class="card-icon">☾</span><p class="eyebrow">Privacidad</p><h2>Todo permanece contigo</h2><p>Las cartas se calculan y guardan en el navegador, sin crear cuentas ni enviar datos personales.</p>
+        </article>
+      </section>
+
+      <section class="brand-family">
+        <div class="section-label"><p class="eyebrow">Alaya Holistics</p><h2>Una identidad, distintos caminos de bienestar</h2></div>
+        <div class="brand-family-grid">
+          <article class="brand-line active"><img src="assets/alaya-astro.svg" alt="Alaya Astro" /><p>Astrología personal, cosmogramas y lectura simbólica.</p></article>
+          <article class="brand-line"><img src="assets/alaya-herbolario.svg" alt="Alaya Herbolario" /><p>Plantas, tradición natural y bienestar cotidiano.</p><span>Próximamente</span></article>
+          <article class="brand-line"><img src="assets/alaya-holistics.svg" alt="Alaya Holistics" /><p>La marca principal que reúne el universo Alaya.</p></article>
+        </div>
       </section>
     </section>
 
     <section id="crear" class="screen">
-      <div class="section-title">
-        <p class="eyebrow">Crear carta</p>
-        <h2>Solo 3 pasos</h2>
-        <p>Rellena lo básico. Si no sabes algún dato avanzado, déjalo vacío.</p>
-      </div>
+      <header class="page-heading">
+        <img src="assets/alaya-astro.svg" alt="Alaya Astro" />
+        <div><p class="eyebrow">Nueva consulta</p><h1>Crea tu carta natal</h1><p>Completa los datos con la mayor exactitud posible.</p></div>
+      </header>
 
-      <div class="wizard card">
-        <div class="progress" aria-label="Progreso">
-          <button class="dot active" type="button" data-step="1"><b>1</b><span>Datos</span></button>
-          <button class="dot" type="button" data-step="2"><b>2</b><span>Intención</span></button>
-          <button class="dot" type="button" data-step="3"><b>3</b><span>Resultado</span></button>
-        </div>
+      <div class="workspace">
+        <aside class="step-nav" aria-label="Pasos">
+          <button class="step-pill active" type="button" data-step="1"><b>1</b><span>Nacimiento<small>Fecha, hora y lugar</small></span></button>
+          <button class="step-pill" type="button" data-step="2"><b>2</b><span>Lectura<small>Casas e intención</small></span></button>
+          <button class="step-pill" type="button" data-step="3"><b>3</b><span>Cosmograma<small>Rueda e informe</small></span></button>
+        </aside>
 
-        <form id="chartForm" novalidate>
+        <form id="chartForm" class="form-panel" novalidate>
           <section class="step-page active" data-page="1">
-            <h3>1 · Datos de nacimiento</h3>
-            <p class="hint">Esto es lo mínimo para crear la carta.</p>
-            <div class="grid-2">
-              <label>Nombre
-                <input id="name" name="name" required placeholder="Ej. Atenea" />
-              </label>
-              <label>Fecha de nacimiento
-                <input id="birthDate" name="birthDate" type="date" required />
-              </label>
-              <label>Hora de nacimiento
-                <input id="birthTime" name="birthTime" type="time" required />
-              </label>
-              <label>Ciudad
-                <input id="city" name="city" required placeholder="Ej. Barcelona" />
-              </label>
-              <label>País
-                <input id="country" name="country" required placeholder="Ej. España" />
-              </label>
-              <label>Precisión de la hora
-                <select id="timeAccuracy" name="timeAccuracy">
-                  <option value="alta">Alta: hora oficial</option>
-                  <option value="media">Media: hora recordada</option>
-                  <option value="baja">Baja: aproximada</option>
-                  <option value="sin-hora">No sé la hora exacta</option>
-                </select>
-              </label>
+            <div class="panel-heading"><span>☾</span><div><h2>Datos de nacimiento</h2><p>La hora debe ser la hora local que marcaba el reloj.</p></div></div>
+            <div class="form-grid">
+              <label class="span-2">Nombre o alias<input id="name" name="name" required autocomplete="name" placeholder="Ej. Lucía" /></label>
+              <label>Fecha<input id="birthDate" name="birthDate" type="date" required /></label>
+              <label>Hora local<input id="birthTime" name="birthTime" type="time" required /></label>
+              <label>Ciudad<input id="city" name="city" required placeholder="Ej. Madrid" /></label>
+              <label>País<input id="country" name="country" required placeholder="Ej. España" /></label>
+              <label>Latitud<input id="lat" name="lat" type="number" step="0.0001" min="-90" max="90" required placeholder="40.4168" /><small>Norte positivo, sur negativo.</small></label>
+              <label>Longitud<input id="lon" name="lon" type="number" step="0.0001" min="-180" max="180" required placeholder="-3.7038" /><small>Este positivo, oeste negativo.</small></label>
+              <label>Desfase UTC al nacer<select id="utcOffset" name="utcOffset" required></select><small>Incluye el horario de verano de esa fecha.</small></label>
+              <label>Precisión de la hora<select id="timeAccuracy" name="timeAccuracy"><option value="exacta">Exacta: registro oficial</option><option value="aproximada">Aproximada: hora recordada</option><option value="desconocida">Desconocida</option></select></label>
             </div>
-            <div class="actions right">
-              <button class="btn primary" type="button" data-next="2">Siguiente</button>
-            </div>
+            <div class="notice"><b>La precisión empieza aquí</b><p>El Ascendente y las casas pueden cambiar rápidamente. Revisa especialmente la hora, el desfase UTC y las coordenadas.</p></div>
+            <div class="actions end"><button class="button primary" type="button" data-next="2">Continuar ✦</button></div>
           </section>
 
           <section class="step-page" data-page="2">
-            <h3>2 · Elige qué carta quieres</h3>
-            <p class="hint">Solo hay tres opciones principales para que no sea un lío.</p>
-            <div class="choice-grid" role="radiogroup" aria-label="Tipo de carta">
-              <label class="choice selected">
-                <input type="radio" name="readingType" value="natal" checked />
-                <b>Carta natal</b>
-                <span>Personalidad, emociones, talentos y retos.</span>
-              </label>
-              <label class="choice">
-                <input type="radio" name="readingType" value="hoy" />
-                <b>Energía de hoy</b>
-                <span>Guía breve para el momento actual.</span>
-              </label>
-              <label class="choice">
-                <input type="radio" name="readingType" value="compatibilidad" />
-                <b>Compatibilidad</b>
-                <span>Lectura simbólica entre dos personas.</span>
-              </label>
-            </div>
-
-            <div id="compatBox" class="soft-box hidden">
-              <h4>Datos de la segunda persona</h4>
-              <div class="grid-2">
-                <label>Nombre de la otra persona<input id="otherName" name="otherName" placeholder="Ej. Alex" /></label>
-                <label>Fecha nacimiento otra persona<input id="otherBirthDate" name="otherBirthDate" type="date" /></label>
+            <div class="panel-heading"><span>✦</span><div><h2>Enfoque de la lectura</h2><p>Personaliza la forma de organizar e interpretar la carta.</p></div></div>
+            <fieldset>
+              <legend>Sistema de casas</legend>
+              <div class="choice-grid">
+                <label class="choice selected"><input type="radio" name="houses" value="whole" checked /><b>Signo completo</b><span>Cada signo ocupa una casa. Lectura estable y clara.</span></label>
+                <label class="choice"><input type="radio" name="houses" value="equal" /><b>Casas iguales</b><span>Doce sectores de 30° desde el Ascendente.</span></label>
               </div>
-            </div>
-
-            <label>Pregunta o intención
-              <textarea id="intention" name="intention" rows="3" placeholder="Ej. ¿Qué necesito entender de mi momento actual?"></textarea>
-            </label>
-
+            </fieldset>
+            <fieldset>
+              <legend>Tipo de consulta</legend>
+              <div class="choice-grid three">
+                <label class="choice selected"><input type="radio" name="readingType" value="natal" checked /><b>Natal</b><span>Identidad y patrones.</span></label>
+                <label class="choice"><input type="radio" name="readingType" value="hoy" /><b>Momento actual</b><span>Clima y orientación.</span></label>
+                <label class="choice"><input type="radio" name="readingType" value="compatibilidad" /><b>Vínculos</b><span>Enfoque relacional.</span></label>
+              </div>
+            </fieldset>
+            <label>Pregunta o intención<textarea id="intention" name="intention" rows="4" placeholder="¿Qué aspecto de mi carta deseo comprender mejor?"></textarea></label>
             <details class="advanced">
-              <summary>Modo avanzado opcional</summary>
-              <p class="hint">No hace falta tocar esto para crear la carta. Sirve para revisar con Astro.com o mejorar datos técnicos.</p>
-              <div class="grid-2">
-                <label>Latitud<input id="lat" name="lat" placeholder="41.38" /></label>
-                <label>Longitud<input id="lon" name="lon" placeholder="2.17" /></label>
-                <label>UTC nacimiento<input id="utc" name="utc" placeholder="+01:00" /></label>
-                <label>Sistema de casas
-                  <select id="houses" name="houses">
-                    <option>No indicado</option><option>Placidus</option><option>Whole Sign</option><option>Casas iguales</option>
-                  </select>
-                </label>
-              </div>
-              <label>Posiciones copiadas desde Astro.com
-                <textarea id="astroText" name="astroText" rows="5" placeholder="Ej. Sol Aries 12°, Luna Cáncer 4°, Ascendente Libra 8°..."></textarea>
-              </label>
-              <div class="actions">
-                <a class="btn ghost" href="https://www.astro.com/free/free_chart_e.htm" target="_blank" rel="noopener">Abrir Astro.com</a>
-              </div>
+              <summary>Introducir posiciones revisadas</summary>
+              <p>Puedes pegar posiciones planetarias ya verificadas. Los puntos reconocidos sustituirán el cálculo local.</p>
+              <textarea id="astroText" name="astroText" rows="5" placeholder="Sol Géminis 21°34', Luna Aries 14°46', Ascendente Libra 8°..."></textarea>
             </details>
-
-            <div class="actions between">
-              <button class="btn ghost" type="button" data-next="1">Atrás</button>
-              <button class="btn primary" type="submit">Generar carta</button>
-            </div>
+            <div class="actions between"><button class="button quiet" type="button" data-next="1">Atrás</button><button class="button primary" type="submit">Revelar mi carta ✦</button></div>
           </section>
 
-          <section class="step-page" data-page="3">
-            <h3>3 · Tu carta</h3>
-            <div id="resultSlot" class="result-empty">
-              Rellena los pasos anteriores y pulsa <b>Generar carta</b>.
-            </div>
+          <section class="step-page result-page" data-page="3">
+            <div id="resultSlot" class="result-empty">Completa los datos para revelar aquí tu cosmograma.</div>
           </section>
         </form>
       </div>
     </section>
 
     <section id="historial" class="screen">
-      <div class="section-title split">
-        <div>
-          <p class="eyebrow">Historial</p>
-          <h2>Tus cartas guardadas</h2>
-        </div>
-        <button id="clearHistoryBtn" class="btn ghost small">Borrar historial</button>
-      </div>
+      <header class="page-heading"><img src="assets/alaya-astro.svg" alt="Alaya Astro" /><div><p class="eyebrow">Archivo personal</p><h1>Mis cartas</h1><p>Guardadas únicamente en este dispositivo.</p></div><button id="clearHistoryBtn" class="button quiet small">Borrar todas</button></header>
       <div id="historyList" class="history-list"></div>
     </section>
 
-    <section id="ajustes" class="screen">
-      <div class="section-title">
-        <p class="eyebrow">Ajustes</p>
-        <h2>Simple por defecto</h2>
-        <p>La app está pensada para que cualquiera pueda hacer una carta sin leer instrucciones largas.</p>
+    <section id="aprender" class="screen">
+      <header class="page-heading"><img src="assets/alaya-astro.svg" alt="Alaya Astro" /><div><p class="eyebrow">Biblioteca astral</p><h1>Aprende a leer tu cielo</h1><p>Empieza por los tres pilares y añade después casas y aspectos.</p></div></header>
+      <div class="learn-grid">
+        <article id="topic-planetas"><span>☉</span><p class="eyebrow">Identidad</p><h2>Sol y planetas</h2><p>Cada planeta representa una función: sentir, pensar, vincular, actuar, crecer y estructurar.</p></article>
+        <article><span>☽</span><p class="eyebrow">Emoción</p><h2>Luna</h2><p>Describe necesidades internas, memoria y la forma espontánea de buscar seguridad.</p></article>
+        <article id="topic-casas"><span>⌂</span><p class="eyebrow">Escenario</p><h2>Casas</h2><p>Las doce casas organizan la experiencia en identidad, recursos, comunicación, hogar, vínculos y vocación.</p></article>
+        <article id="topic-aspectos"><span>△</span><p class="eyebrow">Dinámica</p><h2>Aspectos</h2><p>Los ángulos entre planetas muestran cooperación, tensión y caminos de integración.</p></article>
       </div>
+    </section>
+
+    <section id="ajustes" class="screen">
+      <header class="page-heading"><img src="assets/alaya-astro.svg" alt="Alaya Astro" /><div><p class="eyebrow">Preferencias</p><h1>Ajustes</h1></div></header>
       <div class="settings-grid">
-        <article class="card">
-          <h3>Apariencia</h3>
-          <label class="switch"><input id="comfortToggle" type="checkbox" /> Lectura cómoda</label>
-          <label class="switch"><input id="contrastToggle" type="checkbox" /> Alto contraste</label>
-        </article>
-        <article class="card">
-          <h3>Datos</h3>
-          <button id="exportBtn" class="btn secondary">Exportar historial</button>
-          <label class="import-label">Importar historial<input id="importFile" type="file" accept="application/json" /></label>
-        </article>
-        <article class="card">
-          <h3>Ayuda rápida</h3>
-          <ol class="help-list">
-            <li>Entra en <b>Crear carta</b>.</li>
-            <li>Rellena nombre, fecha, hora y ciudad.</li>
-            <li>Elige carta natal, energía de hoy o compatibilidad.</li>
-            <li>Pulsa <b>Generar carta</b>.</li>
-            <li>Guarda o descarga el PDF.</li>
-          </ol>
-        </article>
+        <article class="settings-card"><h2>Lectura</h2><label class="switch"><input id="comfortToggle" type="checkbox" /> Texto ampliado</label><label class="switch"><input id="contrastToggle" type="checkbox" /> Alto contraste</label></article>
+        <article class="settings-card"><h2>Copia de seguridad</h2><button id="exportBtn" class="button soft">Exportar cartas</button><label class="file-label">Importar archivo<input id="importFile" type="file" accept="application/json" /></label></article>
+        <article class="settings-card"><h2>Cálculo astral</h2><p>Posiciones tropicales geocéntricas, Ascendente por tiempo sidéreo local y casas de signo completo o iguales.</p></article>
       </div>
     </section>
   </main>
 
   <nav class="bottom-nav" aria-label="Navegación móvil">
-    <button data-route="inicio">Inicio</button>
-    <button data-route="crear">Crear</button>
-    <button data-route="historial">Historial</button>
-    <button data-route="ajustes">Ajustes</button>
+    <button data-route="inicio">⌂<small>Inicio</small></button>
+    <button data-route="crear">☉<small>Carta</small></button>
+    <button data-route="historial">☆<small>Guardadas</small></button>
+    <button data-route="aprender">✦<small>Guía</small></button>
   </nav>
 
+  <div id="welcomeModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <div class="welcome-modal">
+      <img src="assets/alaya-holistics.svg" alt="Alaya Holistics" />
+      <p class="eyebrow">Bienvenida a Alaya</p>
+      <h2 id="welcomeTitle">Tu cielo empieza contigo</h2>
+      <p>Escribe tu nombre para personalizar la experiencia.</p>
+      <label>Nombre o alias<input id="welcomeName" placeholder="Tu nombre..." autocomplete="name" /></label>
+      <button id="welcomeStart" class="button primary">Comenzar ✦</button>
+      <button id="welcomeSkip" class="text-button">Ahora no</button>
+    </div>
+  </div>
+
   <template id="readingTemplate">
-    <article class="reading card printable">
-      <div class="reading-cover">
-        <p class="eyebrow">Alaya Astral IA · Carta clara</p>
-        <h2 data-field="title"></h2>
-        <p data-field="subtitle"></p>
+    <article class="reading">
+      <header class="reading-header">
+        <img src="assets/alaya-astro.svg" alt="Alaya Astro" />
+        <div><p class="eyebrow">Cosmograma personal</p><h1 data-field="title"></h1><p data-field="subtitle"></p></div>
         <div data-field="badges" class="badges"></div>
-      </div>
-      <div class="reading-layout">
-        <aside class="astro-wheel" data-field="wheel"></aside>
-        <div data-field="sections" class="reading-sections"></div>
-      </div>
-      <div class="actions wrap no-print">
-        <button class="btn primary" data-action="save">Guardar carta</button>
-        <button class="btn secondary" data-action="pdf">Descargar PDF</button>
-        <button class="btn ghost" data-action="copy">Copiar texto</button>
-        <button class="btn ghost" data-action="html">Descargar HTML</button>
-      </div>
+      </header>
+      <section class="chart-dashboard"><div class="wheel-wrap" data-field="wheel"></div><div class="big-three" data-field="bigThree"></div></section>
+      <nav class="result-nav"><a href="#posiciones">Posiciones</a><a href="#aspectos">Aspectos</a><a href="#interpretacion">Lectura</a></nav>
+      <section id="posiciones" class="result-section-block"><div class="block-heading"><p class="eyebrow">Datos técnicos</p><h2>Posiciones planetarias</h2></div><div class="planet-table" data-field="positions"></div><div class="method-note" data-field="method"></div></section>
+      <section id="aspectos" class="result-section-block"><div class="block-heading"><p class="eyebrow">Geometría interior</p><h2>Aspectos principales</h2></div><div class="aspect-grid" data-field="aspects"></div></section>
+      <section id="interpretacion" class="result-section-block interpretation"><div class="block-heading"><p class="eyebrow">Síntesis Alaya</p><h2>Tu mapa, paso a paso</h2></div><div class="reading-sections" data-field="sections"></div></section>
+      <div class="actions reading-actions no-print"><button class="button primary" data-action="save">Guardar carta</button><button class="button soft" data-action="pdf">Crear PDF</button><button class="button quiet" data-action="copy">Copiar texto</button><button class="button quiet" data-action="html">Descargar informe</button></div>
     </article>
   </template>
 
-  <script src="app.js" defer></script>
+  <script src="astronomy.browser.min.js?v=2.1.19"></script>
+  <script src="app.js?v=7.1.0" defer></script>
 </body>
 </html>

@@ -1,32 +1,35 @@
-ALAYA ASTRAL IA v6.7 CLARITY
+ALAYA ASTRO v7.1
 
-Esta versión corrige el problema principal: había demasiados items y no quedaba claro cómo hacer la carta.
+IDENTIDAD
+- Alaya Holistics es la marca principal.
+- Alaya Astro es la aplicación de astrología.
+- Alaya Herbolario forma parte de la misma familia visual.
+- Las tres firmas conservan el nombre ALAYA con un carácter artesanal.
 
-CAMBIO PRINCIPAL
-- La app ahora tiene modo simple por defecto.
-- Solo hay 4 pantallas: Inicio, Crear carta, Historial y Ajustes.
-- Crear carta está organizado en 3 pasos:
-  1. Datos de nacimiento
-  2. Intención / tipo de carta
-  3. Resultado
+EXPERIENCIA
+- Portada premium en colores claros.
+- Acciones rápidas, mapa modular y guía de bienvenida.
+- Carta natal con rueda SVG, posiciones, casas y aspectos.
+- Informe imprimible con identidad Alaya Astro.
+- Historial, exportación, copia de seguridad y PWA.
 
-TIPOS DE CARTA VISIBLES
-- Carta natal
-- Energía de hoy
-- Compatibilidad
+CÁLCULO
+- Posiciones tropicales geocéntricas de diez cuerpos.
+- Ascendente mediante tiempo sidéreo local.
+- Casas de signo completo y casas iguales.
+- Aspectos mayores con orbes configurados.
+- Entrada de latitud, longitud y desfase UTC.
+- Importación opcional de posiciones ya revisadas.
 
-MODO AVANZADO
-Está escondido en "Modo avanzado opcional".
-Incluye latitud, longitud, UTC, sistema de casas y texto copiado desde Astro.com.
+PRIVACIDAD
+- El cálculo se ejecuta en el dispositivo.
+- Cartas, borradores y preferencias se guardan en el navegador.
+- La aplicación no necesita cuentas ni envía los datos de nacimiento.
 
-IMPORTANTE
-El cálculo interno es simbólico/aproximado. Para una carta profesional exacta, hay que revisar posiciones manualmente con Astro.com u otra herramienta profesional y pegarlas en el modo avanzado.
-
-ARCHIVOS
-- index.html
-- styles.css
-- app.js
-- manifest.webmanifest
-- sw.js
-- icons/
-- QUICK_START.txt
+USO
+1. Abre index.html.
+2. Entra en “Primera carta”.
+3. Introduce fecha, hora local, coordenadas y UTC.
+4. Elige el sistema de casas.
+5. Pulsa “Revelar mi carta”.
+6. Guarda o crea el PDF desde el resultado.
