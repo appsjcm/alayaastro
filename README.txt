@@ -1,21 +1,32 @@
-ALAYA ASTRAL IA · v6.6 Domain SEO Kit
+ALAYA ASTRAL IA v6.7 CLARITY
 
-App astral premium en formato PWA, preparada para publicación controlada.
+Esta versión corrige el problema principal: había demasiados items y no quedaba claro cómo hacer la carta.
 
-Incluye:
-- Lecturas por capas y universo personal.
-- Historial, favoritas, perfiles y backup local.
-- PDF/HTML profesional mediante impresión o descarga.
-- Comprobación Astro.com manual, sin automatizar ni extraer datos de su web.
-- Publication Kit v6.5 + Domain SEO Kit v6.6.
-- Archivos de publicación: robots.txt, sitemap.xml, 404.html, _headers, vercel.json, netlify.toml, healthcheck.json y version.json.
+CAMBIO PRINCIPAL
+- La app ahora tiene modo simple por defecto.
+- Solo hay 4 pantallas: Inicio, Crear carta, Historial y Ajustes.
+- Crear carta está organizado en 3 pasos:
+  1. Datos de nacimiento
+  2. Intención / tipo de carta
+  3. Resultado
 
-Antes de publicar:
-1. Cambia example.com por tu URL real en sitemap.xml, robots.txt, index.html y SITE_CONFIG.example.json.
-2. Sube todo el contenido a GitHub Pages, Netlify o Vercel.
-3. Abre la URL HTTPS, limpia caché PWA y recarga.
-4. Crea una demo, guárdala y márcala como favorita.
-5. Prueba PDF, Historial, Mi Universo, móvil y backup.
+TIPOS DE CARTA VISIBLES
+- Carta natal
+- Energía de hoy
+- Compatibilidad
 
-Importante:
-Astro.com se mantiene únicamente como referencia manual pegada por la persona usuaria.
+MODO AVANZADO
+Está escondido en "Modo avanzado opcional".
+Incluye latitud, longitud, UTC, sistema de casas y texto copiado desde Astro.com.
+
+IMPORTANTE
+El cálculo interno es simbólico/aproximado. Para una carta profesional exacta, hay que revisar posiciones manualmente con Astro.com u otra herramienta profesional y pegarlas en el modo avanzado.
+
+ARCHIVOS
+- index.html
+- styles.css
+- app.js
+- manifest.webmanifest
+- sw.js
+- icons/
+- QUICK_START.txt

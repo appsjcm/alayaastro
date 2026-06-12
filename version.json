@@ -1,14 +1,5 @@
 {
-  "app": "Alaya Astral IA",
-  "version": "v6.6 Domain SEO Kit",
-  "date": "2026-06-12",
-  "stage": "domain-seo-publication-kit",
-  "astro_com": "manual reference only; no automation or scraping",
-  "files_added": [
-    "SITE_CONFIG.example.json",
-    "PUBLIC_URL_CHECKLIST.txt",
-    "404.html",
-    "_headers",
-    "vercel.json"
-  ]
+  "version": "6.7.0",
+  "name": "Alaya Astral IA v6.7 Clarity",
+  "focus": "Modo simple para crear carta en 3 pasos"
 }

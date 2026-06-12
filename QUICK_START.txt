@@ -1,0 +1,24 @@
+CÓMO HACER UNA CARTA EN ALAYA ASTRAL IA
+
+1. Abre la app.
+2. Pulsa "Crear mi carta".
+3. Escribe:
+   - Nombre
+   - Fecha de nacimiento
+   - Hora de nacimiento
+   - Ciudad
+   - País
+4. Pulsa "Siguiente".
+5. Elige una opción:
+   - Carta natal
+   - Energía de hoy
+   - Compatibilidad
+6. Escribe una pregunta si quieres.
+7. Pulsa "Generar carta".
+8. Cuando salga el resultado, puedes:
+   - Guardar carta
+   - Descargar PDF
+   - Copiar texto
+   - Descargar HTML
+
+NO TOQUES EL MODO AVANZADO si solo quieres hacer una carta normal.
