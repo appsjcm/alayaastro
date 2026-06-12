@@ -1,0 +1,18 @@
+ALAYA ASTRAL IA v6.6 · PUBLIC URL CHECKLIST
+
+1. Elige la URL final:
+   - GitHub Pages: https://TU-USUARIO.github.io/TU-REPO/
+   - Netlify: https://TU-SITIO.netlify.app/
+   - Vercel: https://TU-SITIO.vercel.app/
+
+2. Reemplaza example.com en:
+   - sitemap.xml
+   - robots.txt
+   - index.html canonical / og:url
+   - SITE_CONFIG.example.json si lo usas como base
+
+3. Sube la app por HTTPS.
+4. Abre la URL final y limpia caché PWA desde la app.
+5. Crea una demo, guárdala y márcala favorita.
+6. Prueba PDF, Historial, Mi Universo, backup y modo móvil.
+7. Comprueba Astro.com solo de forma manual pegando datos si lo necesitas.

@@ -1,0 +1,24 @@
+{
+  "app": "Alaya Astral IA",
+  "version": "v6.6 Domain SEO Kit",
+  "status": "ready-template",
+  "checks": [
+    "index.html",
+    "app.js",
+    "styles.css",
+    "manifest.webmanifest",
+    "sw.js",
+    "icons",
+    "robots.txt",
+    "sitemap.xml",
+    "404.html",
+    "_headers",
+    "vercel.json"
+  ],
+  "replace_before_publication": [
+    "example.com placeholders",
+    "canonical URL",
+    "og:url"
+  ],
+  "generated": "2026-06-12"
+}

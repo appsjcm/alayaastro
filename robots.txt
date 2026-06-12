@@ -1,0 +1,5 @@
+# Alaya Astral IA v6.6
+# Cambia example.com por tu dominio real antes de publicar.
+User-agent: *
+Allow: /
+Sitemap: https://example.com/alaya-astral-ia/sitemap.xml

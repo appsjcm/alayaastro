@@ -1,0 +1,10 @@
+v6.6 Domain SEO Kit
+- Añadido preflight de URL pública real.
+- Añadidos site config, 404.html, _headers y vercel.json.
+- Mejorado robots.txt y sitemap.xml como plantillas claras.
+- Añadidos botones Domain Kit, Checklist, site.config y Preflight.
+- Añadida auditoría de SEO/PWA/dominio/caché.
+- Actualizados README, manifest, service worker, healthcheck y version.json.
+
+v6.5 Publication Kit
+- Añadidos robots.txt, sitemap.xml, .nojekyll, netlify.toml, healthcheck y checklist.

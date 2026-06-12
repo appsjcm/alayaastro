@@ -1,0 +1,19 @@
+ALAYA ASTRAL IA v6.6 · CHECKLIST PUBLICACIÓN
+
+[ ] URL real definida.
+[ ] example.com reemplazado en sitemap.xml.
+[ ] example.com reemplazado en robots.txt.
+[ ] canonical/og:url revisados en index.html.
+[ ] manifest.webmanifest revisado.
+[ ] sw.js actualizado a v6.6.
+[ ] 404.html incluido.
+[ ] _headers o vercel.json revisados según plataforma.
+[ ] Demo creada y guardada.
+[ ] Demo marcada favorita.
+[ ] PDF/dossier probado.
+[ ] Historial y Mi Universo probados.
+[ ] Backup/exportación probado.
+[ ] Caché PWA limpiada tras publicar.
+[ ] iPhone Safari probado.
+[ ] Android Chrome probado.
+[ ] Astro.com usado solo manualmente si aplica.

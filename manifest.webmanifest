@@ -1,0 +1,46 @@
+{
+  "name": "Alaya Astral IA · Domain SEO Kit",
+  "short_name": "Alaya Astral",
+  "description": "Santuario astral premium preparado para URL real, SEO, PWA y publicación controlada.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070413",
+  "theme_color": "#120a26",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "/alaya-astral-ia/",
+  "categories": [
+    "lifestyle",
+    "productivity",
+    "utilities"
+  ],
+  "screenshots": [
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Alaya Astral IA"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Alaya Astral IA"
+    }
+  ]
+}

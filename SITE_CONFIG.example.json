@@ -1,0 +1,14 @@
+{
+  "app": "Alaya Astral IA",
+  "version": "v6.6 Domain SEO Kit",
+  "public_url": "https://example.com/alaya-astral-ia/",
+  "canonical": "https://example.com/alaya-astral-ia/",
+  "platform": "github-pages | netlify | vercel | local",
+  "indexing": "template | index | noindex | private",
+  "replace_before_publish": [
+    "example.com in sitemap.xml",
+    "example.com in robots.txt",
+    "og:url/canonical in index.html"
+  ],
+  "astro_com": "manual paste only; no automation or scraping"
+}

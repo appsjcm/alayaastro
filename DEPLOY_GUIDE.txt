@@ -1,0 +1,24 @@
+ALAYA ASTRAL IA v6.6 · DEPLOY GUIDE
+
+GitHub Pages:
+1. Crea un repositorio.
+2. Sube todos los archivos del ZIP descomprimido.
+3. Activa Settings > Pages > Deploy from branch.
+4. Usa la URL generada como URL pública.
+5. Cambia example.com por esa URL en sitemap.xml, robots.txt e index.html.
+
+Netlify:
+1. Arrastra la carpeta descomprimida al panel de Netlify.
+2. Revisa _headers y netlify.toml.
+3. Cambia example.com por la URL final.
+
+Vercel:
+1. Importa el proyecto o sube los archivos.
+2. vercel.json ya incluye cabeceras básicas.
+3. Cambia example.com por la URL final.
+
+Después de publicar:
+- Abre la app en HTTPS.
+- Pulsa Limpiar caché PWA.
+- Crea demo, favorita y prueba PDF.
+- Prueba en iPhone Safari y Android Chrome.
