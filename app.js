@@ -1,9 +1,10 @@
-const VERSION = "7.5.0";
+const VERSION = "7.7.1";
 const STORE = { history: "alaya_v70_history", settings: "alaya_v70_settings", draft: "alaya_v70_draft" };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const signs = ["Aries","Tauro","Géminis","Cáncer","Leo","Virgo","Libra","Escorpio","Sagitario","Capricornio","Acuario","Piscis"];
 const signGlyph = ["♈︎","♉︎","♊︎","♋︎","♌︎","♍︎","♎︎","♏︎","♐︎","♑︎","♒︎","♓︎"];
+const houseThemes = ["Identidad","Recursos","Comunicación","Hogar","Creatividad","Rutinas","Vínculos","Transformación","Sentido","Vocación","Comunidad","Mundo interior"];
 const planetDefs = [
   ["sun","Sol","☉","Sun"],["moon","Luna","☽","Moon"],["mercury","Mercurio","☿","Mercury"],
   ["venus","Venus","♀","Venus"],["mars","Marte","♂","Mars"],["jupiter","Júpiter","♃","Jupiter"],
@@ -272,6 +273,43 @@ function calculateAspects(positions){
   }
   return aspects.sort((a,b) => a.orb - b.orb);
 }
+function calculateTransitSnapshot(reading, date = new Date()){
+  const positions = {};
+  for(const [key,, ,body] of planetDefs){
+    const longitude = apparentLongitude(body,date);
+    positions[key] = { ...longitudeToPosition(longitude),house:houseFor(longitude,reading.cusps) };
+  }
+  const nodeLongitude = calculateMeanNode(date);
+  positions.northNode = { ...longitudeToPosition(nodeLongitude),house:houseFor(nodeLongitude,reading.cusps) };
+  const transitKeys = [...planetDefs.map(([key]) => key),"northNode"];
+  const natalKeys = [...planetDefs.map(([key]) => key),"asc","mc","northNode"];
+  const definitions = aspectDefs.filter(definition => definition.major);
+  const aspects = [];
+  for(const transit of transitKeys){
+    for(const natal of natalKeys){
+      const raw = Math.abs(positions[transit].longitude - reading.positions[natal].longitude);
+      const separation = Math.min(raw,360 - raw);
+      for(const definition of definitions){
+        const allowedOrb = ["sun","moon"].includes(transit) ? Math.min(definition.orb,4) : Math.min(definition.orb,3);
+        const orb = Math.abs(separation - definition.angle);
+        if(orb <= allowedOrb){
+          aspects.push({ ...definition,transit,natal,separation,orb,transitHouse:positions[transit].house });
+          break;
+        }
+      }
+    }
+  }
+  aspects.sort((a,b) => a.orb - b.orb);
+  return { date:date.toISOString(),positions,aspects };
+}
+function transitMeaning(aspect){
+  const tone = {
+    harmony:"facilita una expresión más fluida",
+    tension:"plantea una fricción que pide conciencia y ajuste",
+    neutral:"intensifica y concentra esta función"
+  }[aspect.tone] || "activa este tema";
+  return `${nameFor(aspect.transit)} en tránsito ${tone} al tocar tu ${nameFor(aspect.natal)} natal. La casa ${aspect.transitHouse} señala el área cotidiana donde puede sentirse con más claridad.`;
+}
 function dominantElement(positions){
   const elements = ["Fuego","Tierra","Aire","Agua"];
   const scores = [0,0,0,0];
@@ -322,10 +360,11 @@ function buildReading(data){
     { title:`Elemento ${element}`, text:`La distribución de los puntos personales da mayor peso a ${element.toLowerCase()}. Úsalo como una tendencia de lectura, no como una etiqueta cerrada.` }
   ];
   if(aspects[0]) sections.push({ title:`Aspecto dominante: ${aspects[0].name}`, text:`${nameFor(aspects[0].from)} y ${nameFor(aspects[0].to)} forman una ${aspects[0].name.toLowerCase()} con un orbe de ${round(aspects[0].orb,1)}°. Es uno de los vínculos geométricos más precisos de esta carta.` });
+  const transits = data.readingType === "hoy" ? calculateTransitSnapshot({ positions,cusps },new Date()) : null;
   return {
     id:`alaya-${Date.now()}`, created:new Date().toISOString(), version:VERSION,
     title:`Carta natal de ${data.name}`, subtitle:`${data.city}, ${data.country} · ${data.birthDate} · ${data.birthTime}`,
-    data, utcDate:date.toISOString(), positions, cusps, aspects, element, houseLabel, method, sections
+    data, utcDate:date.toISOString(), positions, cusps, aspects, element, houseLabel, method, sections, transits
   };
 }
 function polar(cx, cy, radius, degrees){
@@ -415,9 +454,16 @@ function renderPositions(reading){
 function renderHouseCusps(reading){
   return reading.cusps.map((cusp,index) => {
     const position = longitudeToPosition(cusp);
+    const next = reading.cusps[(index + 1) % 12];
+    const span = normalize(next - cusp) || 30;
     const angle = index === 0 ? "ASC" : index === 3 ? "IC" : index === 6 ? "DSC" : index === 9 ? "MC" : "";
-    return `<article class="house-cusp"><span>${index + 1}</span><div><b>Casa ${index + 1}${angle ? ` · ${angle}` : ""}</b><small>${position.degree}° ${String(position.minutes).padStart(2,"0")}′ ${position.sign}</small></div></article>`;
+    return `<article class="house-cusp"><span>${index + 1}</span><div><b>Casa ${index + 1}${angle ? ` · ${angle}` : ""}</b><small class="house-theme">${houseThemes[index]}</small><small class="cusp-position">${position.degree}° ${String(position.minutes).padStart(2,"0")}′ ${position.sign}</small><small class="cusp-span">Amplitud ${round(span,1)}°</small></div></article>`;
   }).join("");
+}
+function renderHouseNote(reading){
+  if(reading.data.houses === "whole") return `<b>Signo completo</b><p>Los 0° son correctos: este sistema hace comenzar cada casa exactamente al inicio de un signo. El Ascendente conserva su grado real en la tabla de posiciones.</p>`;
+  if(reading.data.houses === "equal") return `<b>Casas iguales</b><p>Todas las cúspides comparten el mismo grado y minuto del Ascendente, avanzando un signo por casa. Cada sector mide exactamente 30°.</p>`;
+  return `<b>Porfirio</b><p>Las cúspides son variables porque cada cuadrante se divide en tres partes. Por eso verás grados y amplitudes diferentes entre unas casas y otras.</p>`;
 }
 function renderAspects(reading){
   if(!reading.aspects.length) return "<p>No se encontraron aspectos dentro de los orbes configurados.</p>";
@@ -425,6 +471,16 @@ function renderAspects(reading){
   const minor = reading.aspects.filter(aspect => !aspect.major);
   const cards = list => list.map(aspect => `<article class="aspect-card aspect-card-${aspect.tone}"><span><b>${nameFor(aspect.from)}</b><small>${reading.positions[aspect.from].sign}</small></span><span>${aspect.symbol}</span><span><b>${nameFor(aspect.to)}</b><small>${aspect.name} · orbe ${round(aspect.orb,1)}°</small></span></article>`).join("");
   return `<div class="aspect-group"><h3>Aspectos mayores <small>${major.length}</small></h3><div class="aspect-grid">${cards(major)}</div></div><div class="aspect-group"><h3>Aspectos menores <small>${minor.length}</small></h3><div class="aspect-grid">${cards(minor)}</div></div>`;
+}
+function renderTransits(reading){
+  if(!reading.transits) return `<div class="transit-empty"><span>↻</span><div><b>Calcula el cielo de ahora</b><p>La carta natal permanece fija; los tránsitos se actualizan cuando tú lo decidas.</p></div></div>`;
+  const date = new Date(reading.transits.date);
+  const positionCards = ["sun","moon","mercury","venus","mars","jupiter","saturn"].map(key => {
+    const position = reading.transits.positions[key];
+    return `<article class="transit-position"><span>${glyphFor(key)}</span><div><b>${nameFor(key)}</b><small>${position.degree}° ${String(position.minutes).padStart(2,"0")}′ ${position.sign} · casa ${position.house}</small></div></article>`;
+  }).join("");
+  const aspectCards = reading.transits.aspects.slice(0,12).map(aspect => `<article class="transit-aspect aspect-card-${aspect.tone}"><div class="transit-aspect-title"><span>${glyphFor(aspect.transit)}</span><b>${nameFor(aspect.transit)} ${aspect.symbol} ${nameFor(aspect.natal)}</b><small>orbe ${round(aspect.orb,1)}°</small></div><p>${transitMeaning(aspect)}</p></article>`).join("");
+  return `<div class="transit-date"><b>${date.toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"})}</b><span>Calculado a las ${date.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})}</span></div><div class="transit-positions">${positionCards}</div><h3>Contactos más precisos</h3><div class="transit-aspects">${aspectCards || "<p>No hay aspectos mayores dentro de los orbes estrictos.</p>"}</div>`;
 }
 function renderMethod(reading){
   return `<b>Método y precisión</b><p>Posiciones tropicales geocéntricas calculadas para ${new Date(reading.utcDate).toLocaleString("es-ES",{ timeZone:"UTC" })} UTC. Ascendente y Medio Cielo se obtienen mediante tiempo sidéreo local; Nodo Norte y Lilith corresponden a sus posiciones medias. La Parte de Fortuna usa la fórmula diurna como aproximación. Sistema de casas: ${reading.houseLabel}. La exactitud depende especialmente de la hora, el desfase UTC y las coordenadas introducidas.</p>`;
@@ -436,6 +492,7 @@ function aiChartContext(reading){
   const aspects = reading.aspects.slice(0,24)
     .map(aspect => `${nameFor(aspect.from)} ${aspect.name} ${nameFor(aspect.to)}, orbe ${round(aspect.orb,1)}°`)
     .join("\n");
+  const transits = reading.transits?.aspects?.length ? `\n\nTRÁNSITOS ACTUALES\n${reading.transits.aspects.slice(0,16).map(aspect => `${nameFor(aspect.transit)} en tránsito ${aspect.name} ${nameFor(aspect.natal)} natal, orbe ${round(aspect.orb,1)}°, por casa ${aspect.transitHouse}`).join("\n")}` : "";
   return `Sistema de casas: ${reading.houseLabel}
 Elemento dominante: ${reading.element}
 Intención de la persona: ${reading.data.intention || "Comprender su carta natal"}
@@ -444,7 +501,7 @@ POSICIONES
 ${positions}
 
 ASPECTOS MÁS PRECISOS
-${aspects}`;
+${aspects}${transits}`;
 }
 function aiResponseText(response){
   if(typeof response === "string") return response;
@@ -470,7 +527,7 @@ async function generateAiReading(reading, article, button){
   const messages = [
     {
       role:"system",
-      content:"Eres la voz astrológica de Alaya Astro. Redacta en español una interpretación natal profunda, cálida y responsable. La astrología es una herramienta simbólica de reflexión, no una certeza científica ni una predicción fatalista. No diagnostiques salud, no anuncies sucesos inevitables y no inventes posiciones. Organiza la respuesta con estos títulos: ESENCIA Y MUNDO EMOCIONAL, VOCACIÓN Y CAMINO, VÍNCULOS, SOMBRAS Y CRECIMIENTO, TALENTOS, y ORIENTACIÓN PRÁCTICA. Integra los aspectos entre sí, evita repetir datos y termina con tres preguntas de reflexión. Extensión aproximada: 900 palabras."
+      content:"Eres la voz astrológica de Alaya Astro. Redacta en español una interpretación profunda, cálida y responsable. La astrología es una herramienta simbólica de reflexión, no una certeza científica ni una predicción fatalista. No diagnostiques salud, no anuncies sucesos inevitables y no inventes posiciones. Organiza la respuesta con estos títulos: ESENCIA Y MUNDO EMOCIONAL, VOCACIÓN Y CAMINO, VÍNCULOS, SOMBRAS Y CRECIMIENTO, TALENTOS, y ORIENTACIÓN PRÁCTICA. Si recibes tránsitos actuales, añade CLIMA DEL MOMENTO, diferencia con claridad lo natal de lo temporal y evita presentar el tránsito como destino. Integra los aspectos entre sí, evita repetir datos y termina con tres preguntas de reflexión. Extensión aproximada: 900 palabras."
     },
     { role:"user", content:aiChartContext(reading) }
   ];
@@ -503,8 +560,10 @@ function renderReading(reading){
   $('[data-field="bigThree"]',template).innerHTML = renderBigThree(reading);
   $('[data-field="positions"]',template).innerHTML = renderPositions(reading);
   $('[data-field="houses"]',template).innerHTML = renderHouseCusps(reading);
+  $('[data-field="houseNote"]',template).innerHTML = renderHouseNote(reading);
   $('[data-field="method"]',template).innerHTML = renderMethod(reading);
   $('[data-field="aspects"]',template).innerHTML = renderAspects(reading);
+  $('[data-field="transits"]',template).innerHTML = renderTransits(reading);
   $('[data-field="sections"]',template).innerHTML = reading.sections.map(section => `<article class="reading-section"><h3>${escapeHtml(section.title)}</h3><p>${escapeHtml(section.text)}</p></article>`).join("");
   $('[data-field="ai"]',template).innerHTML = reading.aiInterpretation ? renderAiText(reading.aiInterpretation) : "<p>La interpretación aparecerá aquí cuando pulses el botón.</p>";
   const slot = $("#resultSlot");
@@ -515,6 +574,17 @@ function renderReading(reading){
   const aiButton = $('[data-action="ai"]',article);
   if(reading.aiInterpretation) aiButton.textContent = "Regenerar interpretación";
   aiButton.onclick = () => generateAiReading(JSON.parse(slot.dataset.reading),article,aiButton);
+  $('[data-action="transits"]',article).onclick = () => {
+    const latest = JSON.parse(slot.dataset.reading);
+    latest.transits = calculateTransitSnapshot(latest,new Date());
+    slot.dataset.reading = JSON.stringify(latest);
+    $('[data-field="transits"]',article).innerHTML = renderTransits(latest);
+    toast("Tránsitos actualizados");
+  };
+  $('[data-action="edit-houses"]',article).onclick = () => {
+    setStep(2);
+    $(".step-page[data-page='2']")?.scrollIntoView({ behavior:"smooth",block:"start" });
+  };
   $('[data-action="save"]',article).onclick = () => saveReading(JSON.parse(slot.dataset.reading));
   $('[data-action="pdf"]',article).onclick = () => window.print();
   $('[data-action="copy"]',article).onclick = () => copyText(readingText(JSON.parse(slot.dataset.reading)));
@@ -527,12 +597,14 @@ function renderReading(reading){
 function readingText(reading){
   const positions = Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n");
   const sections = reading.sections.map(section => `${section.title}\n${section.text}`).join("\n\n");
+  const transits = reading.transits?.aspects?.length ? `\n\nTRÁNSITOS\n${reading.transits.aspects.slice(0,16).map(aspect => `${nameFor(aspect.transit)} ${aspect.name} ${nameFor(aspect.natal)} natal · orbe ${round(aspect.orb,1)}°`).join("\n")}` : "";
   const ai = reading.aiInterpretation ? `\n\nINTERPRETACIÓN CON IA\n${reading.aiInterpretation}` : "";
-  return `${reading.title}\n${reading.subtitle}\n\n${positions}\n\n${sections}${ai}`;
+  return `${reading.title}\n${reading.subtitle}\n\n${positions}\n\n${sections}${transits}${ai}`;
 }
 function htmlDoc(reading){
+  const transits = reading.transits?.aspects?.length ? `<section class="card"><h2>Tránsitos actuales</h2>${reading.transits.aspects.slice(0,16).map(aspect => `<p><b>${nameFor(aspect.transit)} ${aspect.name} ${nameFor(aspect.natal)} natal</b> · orbe ${round(aspect.orb,1)}°</p>`).join("")}</section>` : "";
   const ai = reading.aiInterpretation ? `<section class="card"><h2>Interpretación personalizada</h2><p>${escapeHtml(reading.aiInterpretation).replace(/\n/g,"<br>")}</p></section>` : "";
-  return `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(reading.title)}</title><style>body{font:16px/1.6 system-ui;max-width:900px;margin:auto;padding:32px;color:#303249;background:#fffefa}h1,h2{font-family:Georgia,serif;color:#496b96}.brand{letter-spacing:.18em;color:#a58035}.card{border:1px solid #ded7e8;border-radius:16px;padding:18px;margin:14px 0}.muted{color:#74758a}@media print{body{padding:0}}</style><p class="brand">ALAYA ASTRO</p><h1>${escapeHtml(reading.title)}</h1><p class="muted">${escapeHtml(reading.subtitle)}</p><div class="card"><h2>Posiciones</h2><pre>${escapeHtml(Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n"))}</pre></div>${reading.sections.map(section => `<section class="card"><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.text)}</p></section>`).join("")}${ai}</html>`;
+  return `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(reading.title)}</title><style>body{font:16px/1.6 system-ui;max-width:900px;margin:auto;padding:32px;color:#303249;background:#fffefa}h1,h2{font-family:Georgia,serif;color:#496b96}.brand{letter-spacing:.18em;color:#a58035}.card{border:1px solid #ded7e8;border-radius:16px;padding:18px;margin:14px 0}.muted{color:#74758a}@media print{body{padding:0}}</style><p class="brand">ALAYA ASTRO</p><h1>${escapeHtml(reading.title)}</h1><p class="muted">${escapeHtml(reading.subtitle)}</p><div class="card"><h2>Posiciones</h2><pre>${escapeHtml(Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n"))}</pre></div>${reading.sections.map(section => `<section class="card"><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.text)}</p></section>`).join("")}${transits}${ai}</html>`;
 }
 function download(name, content, type = "application/json"){
   const blob = new Blob([content],{ type });
@@ -582,9 +654,21 @@ function applySettings(){
   $("#comfortToggle").checked = !!settings.comfort; $("#contrastToggle").checked = !!settings.contrast;
 }
 function createDemo(){
-  const demo = { name:"Atenea",birthDate:"1992-07-21",birthTime:"12:30",city:"Barcelona",country:"España",countryCode:"ES",lat:"41.3874",lon:"2.1686",timezone:"Europe/Madrid",utcOffset:"2",timeAccuracy:"exacta",houses:"whole",readingType:"natal",intention:"Comprender mis talentos y mi manera de relacionarme." };
+  const demo = { name:"Atenea",birthDate:"1992-07-21",birthTime:"12:30",city:"Barcelona",country:"España",countryCode:"ES",lat:"41.3874",lon:"2.1686",timezone:"Europe/Madrid",utcOffset:"2",timeAccuracy:"exacta",houses:"porphyry",readingType:"natal",intention:"Comprender mis talentos y mi manera de relacionarme." };
   Object.entries(demo).forEach(([key,value]) => $$(`[name="${key}"]`).forEach(control => { if(control.type === "radio") control.checked = control.value === value; else control.value = value; }));
   updateChoices(); route("crear"); renderReading(buildReading(demo));
+}
+function openCurrentTransits(){
+  const latest = read(STORE.history,[])[0];
+  if(latest){
+    latest.transits = calculateTransitSnapshot(latest,new Date());
+    route("crear"); renderReading(latest);
+    setTimeout(() => $("#transitos")?.scrollIntoView({ behavior:"smooth" }),250);
+    return;
+  }
+  const demo = { name:"Atenea",birthDate:"1992-07-21",birthTime:"12:30",city:"Barcelona",country:"España",countryCode:"ES",lat:"41.3874",lon:"2.1686",timezone:"Europe/Madrid",utcOffset:"2",timeAccuracy:"exacta",houses:"porphyry",readingType:"hoy",intention:"Comprender el clima actual y cómo dialoga con mi carta." };
+  route("crear"); renderReading(buildReading(demo));
+  setTimeout(() => $("#transitos")?.scrollIntoView({ behavior:"smooth" }),250);
 }
 function bind(){
   document.addEventListener("click",event => {
@@ -638,6 +722,7 @@ function bind(){
     updateLocationSummary(); saveDraft(); toast("Ubicación manual aplicada");
   });
   $$("[data-demo]").forEach(button => button.onclick = createDemo);
+  $$("[data-transits]").forEach(button => button.onclick = openCurrentTransits);
   $("#welcomeStart").onclick = () => {
     const name = $("#welcomeName").value.trim();
     if(name) $("#name").value = name;

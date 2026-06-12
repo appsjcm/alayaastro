@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/favicon-64.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=7.5.0" />
+  <link rel="stylesheet" href="styles.css?v=7.7.1" />
 </head>
 <body>
   <div class="sky-decoration" aria-hidden="true"></div>
@@ -51,7 +51,7 @@
         <button class="module" data-route="aprender" data-topic="planetas"><span>♃</span><b>Planetas</b><small>Funciones, signos y grados</small></button>
         <button class="module" data-route="aprender" data-topic="casas"><span>⌂</span><b>Casas</b><small>Doce áreas de experiencia</small></button>
         <button class="module" data-route="aprender" data-topic="aspectos"><span>△</span><b>Aspectos</b><small>Dinámicas entre planetas</small></button>
-        <button class="module module-soon" disabled><span>↻</span><b>Momento actual</b><small>Próximo módulo: tránsitos</small></button>
+        <button class="module" data-transits><span>↻</span><b>Momento actual</b><small>Tránsitos sobre tu carta</small></button>
         <button class="module" data-route="historial"><span>☆</span><b>Biblioteca</b><small>Cartas guardadas y PDF</small></button>
         <button class="module" data-route="ajustes"><span>⚙</span><b>Centro</b><small>Privacidad y preferencias</small></button>
       </nav>
@@ -153,16 +153,16 @@
             <fieldset>
               <legend>Sistema de casas</legend>
               <div class="choice-grid">
-                <label class="choice selected"><input type="radio" name="houses" value="whole" checked /><b>Signo completo</b><span>Cada signo ocupa una casa. Lectura estable y clara.</span></label>
+                <label class="choice"><input type="radio" name="houses" value="whole" /><b>Signo completo</b><span>Las doce cúspides comienzan siempre a 0° de cada signo.</span></label>
                 <label class="choice"><input type="radio" name="houses" value="equal" /><b>Casas iguales</b><span>Doce sectores de 30° desde el Ascendente.</span></label>
-                <label class="choice"><input type="radio" name="houses" value="porphyry" /><b>Porfirio</b><span>Divide en tres partes cada cuadrante entre los ángulos.</span></label>
+                <label class="choice selected recommended-choice"><input type="radio" name="houses" value="porphyry" checked /><b>Porfirio <em>Recomendado</em></b><span>Cúspides variables al dividir cada cuadrante entre los ángulos.</span></label>
               </div>
             </fieldset>
             <fieldset>
               <legend>Tipo de consulta</legend>
               <div class="choice-grid three">
                 <label class="choice selected"><input type="radio" name="readingType" value="natal" checked /><b>Natal</b><span>Identidad y patrones.</span></label>
-                <label class="choice disabled-choice"><input type="radio" name="readingType" value="hoy" disabled /><b>Momento actual</b><span>Próximo módulo: tránsitos.</span></label>
+                <label class="choice"><input type="radio" name="readingType" value="hoy" /><b>Momento actual</b><span>Tránsitos sobre la carta natal.</span></label>
                 <label class="choice disabled-choice"><input type="radio" name="readingType" value="compatibilidad" disabled /><b>Vínculos</b><span>Próximo módulo: sinastría.</span></label>
               </div>
             </fieldset>
@@ -234,10 +234,18 @@
         <div data-field="badges" class="badges"></div>
       </header>
       <section class="chart-dashboard"><div class="wheel-wrap" data-field="wheel"></div><div class="big-three" data-field="bigThree"></div></section>
-      <nav class="result-nav"><a href="#posiciones">Posiciones</a><a href="#casas">Casas</a><a href="#aspectos">Aspectos</a><a href="#interpretacion">Lectura</a><a href="#lectura-ia">IA</a></nav>
+      <nav class="result-nav"><a href="#posiciones">Posiciones</a><a href="#casas">Casas</a><a href="#aspectos">Aspectos</a><a href="#transitos">Tránsitos</a><a href="#interpretacion">Lectura</a><a href="#lectura-ia">IA</a></nav>
       <section id="posiciones" class="result-section-block"><div class="block-heading"><p class="eyebrow">Datos técnicos</p><h2>Posiciones planetarias</h2></div><div class="planet-table" data-field="positions"></div><div class="method-note" data-field="method"></div></section>
-      <section id="casas" class="result-section-block houses-section"><div class="block-heading"><p class="eyebrow">Doce áreas de experiencia</p><h2>Cúspides de las casas</h2><p>Grado exacto donde comienza cada casa según el sistema elegido.</p></div><div class="house-cusp-grid" data-field="houses"></div></section>
+      <section id="casas" class="result-section-block houses-section">
+        <div class="houses-heading"><div class="block-heading"><p class="eyebrow">Doce áreas de experiencia</p><h2>Cúspides de las casas</h2><p>Grado exacto donde comienza cada casa según el sistema elegido.</p></div><button class="button quiet small no-print" data-action="edit-houses">Cambiar sistema</button></div>
+        <div class="house-system-note" data-field="houseNote"></div>
+        <div class="house-cusp-grid" data-field="houses"></div>
+      </section>
       <section id="aspectos" class="result-section-block"><div class="block-heading"><p class="eyebrow">Geometría interior</p><h2>Aspectos completos</h2><p>Aspectos mayores y menores ordenados por precisión.</p></div><div class="aspects-panel" data-field="aspects"></div></section>
+      <section id="transitos" class="result-section-block transit-section">
+        <div class="transit-heading"><div class="block-heading"><p class="eyebrow">Cielo en movimiento</p><h2>Tránsitos actuales</h2><p>Planetas del momento comparados con tu carta natal.</p></div><button class="button soft no-print" data-action="transits">Actualizar tránsitos ↻</button></div>
+        <div class="transit-output" data-field="transits"></div>
+      </section>
       <section id="interpretacion" class="result-section-block interpretation"><div class="block-heading"><p class="eyebrow">Síntesis Alaya</p><h2>Tu mapa, paso a paso</h2></div><div class="reading-sections" data-field="sections"></div></section>
       <section id="lectura-ia" class="result-section-block ai-reading">
         <div class="ai-heading">
@@ -254,6 +262,6 @@
 
   <script src="astronomy.browser.min.js?v=2.1.19"></script>
   <script src="https://js.puter.com/v2/"></script>
-  <script src="app.js?v=7.5.0" defer></script>
+  <script src="app.js?v=7.7.1" defer></script>
 </body>
 </html>

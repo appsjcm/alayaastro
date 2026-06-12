@@ -1,4 +1,4 @@
-ALAYA ASTRO v7.5
+ALAYA ASTRO v7.7.1
 
 IDENTIDAD
 - Alaya Holistics es la marca principal.
@@ -20,7 +20,9 @@ CÁLCULO
 - Casas de signo completo y casas iguales.
 - ASC, DSC, MC, IC, nodos lunares, Lilith media y Parte de Fortuna.
 - Casas de signo completo, iguales y Porfirio, con tabla de cúspides.
+- Explicación del grado y amplitud de cada casa; Porfirio recomendado por defecto.
 - Aspectos mayores y menores con orbes configurados.
+- Tránsitos planetarios actuales comparados con la carta natal.
 - Entrada de latitud, longitud y desfase UTC.
 - Importación opcional de posiciones ya revisadas.
 - Selector local de 252 países y territorios.
