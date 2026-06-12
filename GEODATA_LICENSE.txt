@@ -1,0 +1,8 @@
+DATOS GEOGRÁFICOS
+
+La base local de países, ciudades, coordenadas y zonas horarias se deriva de GeoNames.
+Los datos originales se distribuyen bajo licencia Creative Commons Attribution 4.0.
+
+La aplicación almacena una selección de núcleos urbanos y sedes administrativas con
+al menos 500 habitantes cuando la población está disponible. Las reglas históricas
+de zona horaria se resuelven en el dispositivo mediante identificadores IANA.

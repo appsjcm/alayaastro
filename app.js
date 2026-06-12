@@ -1,4 +1,4 @@
-const VERSION = "7.1.0";
+const VERSION = "7.2.0";
 const STORE = { history: "alaya_v70_history", settings: "alaya_v70_settings", draft: "alaya_v70_draft" };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -17,6 +17,8 @@ const aspectDefs = [
   { name:"Trígono", angle:120, orb:7, symbol:"△", tone:"harmony" },
   { name:"Oposición", angle:180, orb:8, symbol:"☍", tone:"tension" }
 ];
+let geoCities = [];
+let selectedCity = null;
 
 function read(key, fallback){ try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
 function write(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
@@ -38,24 +40,93 @@ function setStep(step){
   $$(".step-pill").forEach(button => button.classList.toggle("active", button.dataset.step === String(step)));
 }
 function formData(){ return Object.fromEntries(new FormData($("#chartForm")).entries()); }
-function setupUtcOptions(){
-  const select = $("#utcOffset");
-  const options = [];
-  for(let half = -24; half <= 28; half++){
-    const value = half / 2;
-    const sign = value >= 0 ? "+" : "−";
-    const abs = Math.abs(value);
-    const label = `UTC${sign}${String(Math.floor(abs)).padStart(2,"0")}:${abs % 1 ? "30" : "00"}`;
-    options.push(`<option value="${value}">${label}</option>`);
+function searchKey(value){
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+}
+function formatUtcOffset(value){
+  const sign = value >= 0 ? "+" : "−";
+  const totalMinutes = Math.round(Math.abs(value) * 60);
+  return `UTC${sign}${String(Math.floor(totalMinutes / 60)).padStart(2,"0")}:${String(totalMinutes % 60).padStart(2,"0")}`;
+}
+function offsetAtInstant(timeZone, date){
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA",{
+    timeZone, year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"
+  }).formatToParts(date).filter(part => part.type !== "literal").map(part => [part.type,Number(part.value)]));
+  const represented = Date.UTC(parts.year,parts.month - 1,parts.day,parts.hour,parts.minute,parts.second);
+  return (represented - date.getTime()) / 3600000;
+}
+function historicalUtcOffset(timeZone, dateString, timeString){
+  if(!timeZone || !dateString || !timeString) return null;
+  const [year,month,day] = dateString.split("-").map(Number);
+  const [hour,minute] = timeString.split(":").map(Number);
+  const wallTime = Date.UTC(year,month - 1,day,hour,minute);
+  let instant = wallTime;
+  for(let i = 0; i < 3; i++) instant = wallTime - offsetAtInstant(timeZone,new Date(instant)) * 3600000;
+  return round(offsetAtInstant(timeZone,new Date(instant)),4);
+}
+function updateLocationSummary(){
+  const summary = $("#locationSummary");
+  const city = $("#city").value.trim();
+  const country = $("#country").value.trim();
+  const lat = Number($("#lat").value), lon = Number($("#lon").value);
+  const timezone = $("#timezone").value;
+  const offset = historicalUtcOffset(timezone,$("#birthDate").value,$("#birthTime").value);
+  if(offset !== null) $("#utcOffset").value = String(offset);
+  if(city && country && Number.isFinite(lat) && Number.isFinite(lon) && timezone){
+    summary.classList.add("ready");
+    summary.innerHTML = `<span>✓</span><div><b>${escapeHtml(city)}, ${escapeHtml(country)}</b><small>${lat.toFixed(4)}, ${lon.toFixed(4)} · ${escapeHtml(timezone)}${offset === null ? " · añade fecha y hora" : ` · ${formatUtcOffset(offset)}`}</small></div>`;
+  } else {
+    summary.classList.remove("ready");
+    summary.innerHTML = "<span>⌖</span><div><b>Selecciona país y ciudad</b><small>Las coordenadas y la zona horaria se completarán automáticamente.</small></div>";
   }
-  select.innerHTML = options.join("");
-  select.value = String(-new Date().getTimezoneOffset() / 60);
+}
+async function loadCountries(){
+  const response = await fetch("data/countries.json");
+  if(!response.ok) throw new Error("No se pudo cargar la lista de países");
+  const countries = await response.json();
+  $("#countryCode").innerHTML = `<option value="">Selecciona un país</option>${countries.map(([code,name]) => `<option value="${code}">${escapeHtml(name)}</option>`).join("")}`;
+  $("#city").disabled = true;
+}
+async function loadCities(countryCode){
+  geoCities = []; selectedCity = null; $("#cityResults").classList.add("hidden");
+  if(!countryCode){ $("#city").disabled = true; return; }
+  $("#city").disabled = true; $("#city").placeholder = "Cargando ciudades…";
+  const response = await fetch(`data/cities/${countryCode}.json`);
+  if(!response.ok) throw new Error("No se pudieron cargar las ciudades de este país");
+  geoCities = await response.json();
+  $("#city").disabled = false; $("#city").placeholder = "Escribe al menos 2 letras";
+}
+function renderCityResults(query){
+  const key = searchKey(query);
+  const box = $("#cityResults");
+  if(key.length < 2){ box.classList.add("hidden"); box.innerHTML = ""; return; }
+  const starts = [], contains = [];
+  for(const row of geoCities){
+    const name = searchKey(row[0]), ascii = searchKey(row[1]);
+    if(name.startsWith(key) || ascii.startsWith(key)) starts.push(row);
+    else if(name.includes(key) || ascii.includes(key)) contains.push(row);
+    if(starts.length >= 30) break;
+  }
+  const results = starts.concat(contains).slice(0,30);
+  box.innerHTML = results.length ? results.map((row,index) => `<button class="city-option" type="button" data-city-index="${index}"><span><b>${escapeHtml(row[0])}</b><small>${row[2] ? `Región ${escapeHtml(row[2])}` : escapeHtml($("#country").value)}</small></span><small>${row[6] ? Number(row[6]).toLocaleString("es-ES") : ""}</small></button>`).join("") : `<div class="city-option"><span><b>Sin resultados</b><small>Prueba otra escritura o usa la entrada manual.</small></span></div>`;
+  box.dataset.results = JSON.stringify(results);
+  box.classList.remove("hidden");
+}
+function selectGeoCity(row){
+  selectedCity = row;
+  $("#city").value = row[0];
+  $("#lat").value = row[3];
+  $("#lon").value = row[4];
+  $("#timezone").value = row[5];
+  $("#cityResults").classList.add("hidden");
+  updateLocationSummary();
+  saveDraft();
 }
 function requiredOk(){
   const data = formData();
   const fields = [
     ["name","nombre"],["birthDate","fecha"],["birthTime","hora"],["city","ciudad"],["country","país"],
-    ["lat","latitud"],["lon","longitud"],["utcOffset","UTC"]
+    ["lat","latitud"],["lon","longitud"],["timezone","zona horaria"],["utcOffset","UTC"]
   ];
   const missing = fields.filter(([key]) => data[key] === undefined || String(data[key]).trim() === "").map(([,label]) => label);
   if(missing.length){ toast(`Falta: ${missing.join(", ")}`); return false; }
@@ -322,12 +393,17 @@ function renderHistory(){
   $$("[data-delete]").forEach(button => button.onclick = () => { write(STORE.history,read(STORE.history,[]).filter(item => item.id !== button.dataset.delete)); renderHistory(); renderHome(); });
 }
 function saveDraft(){ write(STORE.draft,formData()); }
-function loadDraft(){
+async function loadDraft(){
   const draft = read(STORE.draft,null); if(!draft) return;
   Object.entries(draft).forEach(([key,value]) => {
     const controls = $$(`[name="${key}"]`);
     controls.forEach(control => { if(control.type === "radio") control.checked = control.value === value; else control.value = value; });
   });
+  if(draft.countryCode){
+    await loadCities(draft.countryCode);
+    $("#city").value = draft.city || "";
+  }
+  updateLocationSummary();
   updateChoices();
 }
 function updateChoices(){ $$(".choice").forEach(choice => choice.classList.toggle("selected",$("input",choice)?.checked)); }
@@ -338,7 +414,7 @@ function applySettings(){
   $("#comfortToggle").checked = !!settings.comfort; $("#contrastToggle").checked = !!settings.contrast;
 }
 function createDemo(){
-  const demo = { name:"Atenea",birthDate:"1992-07-21",birthTime:"12:30",city:"Barcelona",country:"España",lat:"41.3874",lon:"2.1686",utcOffset:"2",timeAccuracy:"exacta",houses:"whole",readingType:"natal",intention:"Comprender mis talentos y mi manera de relacionarme." };
+  const demo = { name:"Atenea",birthDate:"1992-07-21",birthTime:"12:30",city:"Barcelona",country:"España",countryCode:"ES",lat:"41.3874",lon:"2.1686",timezone:"Europe/Madrid",utcOffset:"2",timeAccuracy:"exacta",houses:"whole",readingType:"natal",intention:"Comprender mis talentos y mi manera de relacionarme." };
   Object.entries(demo).forEach(([key,value]) => $$(`[name="${key}"]`).forEach(control => { if(control.type === "radio") control.checked = control.value === value; else control.value = value; }));
   updateChoices(); route("crear"); renderReading(buildReading(demo));
 }
@@ -357,6 +433,42 @@ function bind(){
     catch(error){ console.error(error); toast(error.message || "No se pudo calcular la carta"); }
   });
   $("#chartForm").addEventListener("input",() => { saveDraft(); updateChoices(); });
+  $("#countryCode").addEventListener("change",async event => {
+    const option = event.target.selectedOptions[0];
+    $("#country").value = option?.textContent || "";
+    $("#city").value = ""; $("#lat").value = ""; $("#lon").value = ""; $("#timezone").value = ""; $("#utcOffset").value = "";
+    updateLocationSummary();
+    try { await loadCities(event.target.value); } catch(error){ toast(error.message); }
+    saveDraft();
+  });
+  $("#city").addEventListener("input",event => {
+    selectedCity = null;
+    $("#lat").value = ""; $("#lon").value = ""; $("#timezone").value = ""; $("#utcOffset").value = "";
+    updateLocationSummary();
+    renderCityResults(event.target.value);
+  });
+  $("#cityResults").addEventListener("click",event => {
+    const button = event.target.closest("[data-city-index]");
+    if(!button) return;
+    const results = JSON.parse($("#cityResults").dataset.results || "[]");
+    selectGeoCity(results[Number(button.dataset.cityIndex)]);
+  });
+  document.addEventListener("click",event => {
+    if(!event.target.closest(".city-field")) $("#cityResults").classList.add("hidden");
+  });
+  $("#birthDate").addEventListener("change",updateLocationSummary);
+  $("#birthTime").addEventListener("change",updateLocationSummary);
+  $("#manualLocationToggle").addEventListener("change",event => $("#manualLocationFields").classList.toggle("hidden",!event.target.checked));
+  $("#applyManualLocation").addEventListener("click",() => {
+    const lat = Number($("#manualLat").value), lon = Number($("#manualLon").value);
+    const timezone = $("#manualTimezone").value.trim();
+    try { new Intl.DateTimeFormat("es",{ timeZone:timezone }).format(new Date()); }
+    catch { toast("La zona horaria no es válida"); return; }
+    if(!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180){ toast("Revisa las coordenadas"); return; }
+    if(!$("#city").value.trim() || !$("#country").value.trim()){ toast("Escribe ciudad y selecciona el país"); return; }
+    $("#lat").value = lat; $("#lon").value = lon; $("#timezone").value = timezone;
+    updateLocationSummary(); saveDraft(); toast("Ubicación manual aplicada");
+  });
   $$("[data-demo]").forEach(button => button.onclick = createDemo);
   $("#welcomeStart").onclick = () => {
     const name = $("#welcomeName").value.trim();
@@ -382,8 +494,10 @@ function bind(){
 }
 let deferredPrompt = null;
 window.addEventListener("beforeinstallprompt",event => { event.preventDefault(); deferredPrompt = event; $("#installBtn").classList.remove("hidden"); });
-document.addEventListener("DOMContentLoaded",() => {
-  setupUtcOptions(); bind(); loadDraft(); applySettings(); renderHome(); renderHistory(); updateChoices();
+document.addEventListener("DOMContentLoaded",async () => {
+  bind();
+  try { await loadCountries(); await loadDraft(); } catch(error){ toast(error.message); }
+  applySettings(); renderHome(); renderHistory(); updateChoices();
   route(location.hash.slice(1) || "inicio");
   const install = async () => {
     if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt = null; }

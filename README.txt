@@ -20,6 +20,10 @@ CÁLCULO
 - Aspectos mayores con orbes configurados.
 - Entrada de latitud, longitud y desfase UTC.
 - Importación opcional de posiciones ya revisadas.
+- Selector local de 252 países y territorios.
+- Base integrada de más de 233.000 ciudades y núcleos urbanos.
+- Latitud, longitud y zona horaria automáticas.
+- Cálculo del UTC histórico según la fecha de nacimiento.
 
 PRIVACIDAD
 - El cálculo se ejecuta en el dispositivo.

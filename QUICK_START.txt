@@ -2,7 +2,7 @@ INICIO RÁPIDO · ALAYA ASTRO
 
 1. Pulsa “Demo rápida” para explorar una carta completa.
 2. Pulsa “Primera carta” para crear la tuya.
-3. Completa nacimiento, coordenadas y UTC.
+3. Selecciona país y busca la ciudad; las coordenadas y el UTC se calculan solos.
 4. Elige signo completo o casas iguales.
 5. Revela el cosmograma.
 6. Guarda la carta o crea un PDF.

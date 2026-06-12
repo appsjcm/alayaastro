@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/favicon-64.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=7.1.0" />
+  <link rel="stylesheet" href="styles.css?v=7.2.0" />
 </head>
 <body>
   <div class="sky-decoration" aria-hidden="true"></div>
@@ -116,14 +116,35 @@
               <label class="span-2">Nombre o alias<input id="name" name="name" required autocomplete="name" placeholder="Ej. Lucía" /></label>
               <label>Fecha<input id="birthDate" name="birthDate" type="date" required /></label>
               <label>Hora local<input id="birthTime" name="birthTime" type="time" required /></label>
-              <label>Ciudad<input id="city" name="city" required placeholder="Ej. Madrid" /></label>
-              <label>País<input id="country" name="country" required placeholder="Ej. España" /></label>
-              <label>Latitud<input id="lat" name="lat" type="number" step="0.0001" min="-90" max="90" required placeholder="40.4168" /><small>Norte positivo, sur negativo.</small></label>
-              <label>Longitud<input id="lon" name="lon" type="number" step="0.0001" min="-180" max="180" required placeholder="-3.7038" /><small>Este positivo, oeste negativo.</small></label>
-              <label>Desfase UTC al nacer<select id="utcOffset" name="utcOffset" required></select><small>Incluye el horario de verano de esa fecha.</small></label>
+              <label>País
+                <select id="countryCode" name="countryCode" required><option value="">Cargando países…</option></select>
+                <input id="country" name="country" type="hidden" />
+              </label>
+              <label class="city-field">Ciudad
+                <input id="city" name="city" required autocomplete="off" placeholder="Escribe al menos 2 letras" disabled />
+                <div id="cityResults" class="city-results hidden" role="listbox" aria-label="Ciudades encontradas"></div>
+              </label>
+              <input id="lat" name="lat" type="hidden" />
+              <input id="lon" name="lon" type="hidden" />
+              <input id="timezone" name="timezone" type="hidden" />
+              <input id="utcOffset" name="utcOffset" type="hidden" />
+              <div id="locationSummary" class="location-summary span-2">
+                <span>⌖</span><div><b>Selecciona país y ciudad</b><small>Las coordenadas y la zona horaria se completarán automáticamente.</small></div>
+              </div>
               <label>Precisión de la hora<select id="timeAccuracy" name="timeAccuracy"><option value="exacta">Exacta: registro oficial</option><option value="aproximada">Aproximada: hora recordada</option><option value="desconocida">Desconocida</option></select></label>
             </div>
-            <div class="notice"><b>La precisión empieza aquí</b><p>El Ascendente y las casas pueden cambiar rápidamente. Revisa especialmente la hora, el desfase UTC y las coordenadas.</p></div>
+            <details class="manual-location">
+              <summary>Mi localidad no aparece</summary>
+              <p>Activa la entrada manual solo para núcleos muy pequeños no incluidos en la base local.</p>
+              <label class="switch"><input id="manualLocationToggle" type="checkbox" /> Introducir coordenadas manualmente</label>
+              <div id="manualLocationFields" class="form-grid hidden">
+                <label>Latitud<input id="manualLat" type="number" step="0.0001" min="-90" max="90" /></label>
+                <label>Longitud<input id="manualLon" type="number" step="0.0001" min="-180" max="180" /></label>
+                <label class="span-2">Zona horaria IANA<input id="manualTimezone" placeholder="Ej. Europe/Madrid" /></label>
+                <button id="applyManualLocation" class="button soft" type="button">Aplicar ubicación manual</button>
+              </div>
+            </details>
+            <div class="notice"><b>La precisión empieza aquí</b><p>Alaya calcula automáticamente latitud, longitud y el desfase horario histórico de la fecha seleccionada. Revisa que hayas elegido la ciudad correcta.</p></div>
             <div class="actions end"><button class="button primary" type="button" data-next="2">Continuar ✦</button></div>
           </section>
 
@@ -221,6 +242,6 @@
   </template>
 
   <script src="astronomy.browser.min.js?v=2.1.19"></script>
-  <script src="app.js?v=7.1.0" defer></script>
+  <script src="app.js?v=7.2.0" defer></script>
 </body>
 </html>
