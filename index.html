@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/favicon-64.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=7.7.1" />
+  <link rel="stylesheet" href="styles.css?v=7.9.0" />
 </head>
 <body>
   <div class="sky-decoration" aria-hidden="true"></div>
@@ -48,6 +48,7 @@
       <nav class="module-menu" aria-label="Herramientas de astrología">
         <button class="module active" data-route="crear"><span>◎</span><b>Cosmograma</b><small>Todo de un vistazo</small></button>
         <button class="module" data-route="crear"><span>☉</span><b>Carta natal</b><small>Rueda e informe completo</small></button>
+        <button class="module" data-synastry-demo><span>♡</span><b>Sinastría</b><small>Dos cartas en diálogo</small></button>
         <button class="module" data-route="aprender" data-topic="planetas"><span>♃</span><b>Planetas</b><small>Funciones, signos y grados</small></button>
         <button class="module" data-route="aprender" data-topic="casas"><span>⌂</span><b>Casas</b><small>Doce áreas de experiencia</small></button>
         <button class="module" data-route="aprender" data-topic="aspectos"><span>△</span><b>Aspectos</b><small>Dinámicas entre planetas</small></button>
@@ -163,9 +164,30 @@
               <div class="choice-grid three">
                 <label class="choice selected"><input type="radio" name="readingType" value="natal" checked /><b>Natal</b><span>Identidad y patrones.</span></label>
                 <label class="choice"><input type="radio" name="readingType" value="hoy" /><b>Momento actual</b><span>Tránsitos sobre la carta natal.</span></label>
-                <label class="choice disabled-choice"><input type="radio" name="readingType" value="compatibilidad" disabled /><b>Vínculos</b><span>Próximo módulo: sinastría.</span></label>
+                <label class="choice"><input type="radio" name="readingType" value="compatibilidad" /><b>Vínculos</b><span>Sinastría entre dos cartas.</span></label>
               </div>
             </fieldset>
+            <section id="partnerFields" class="partner-panel hidden">
+              <div class="panel-heading"><span>♡</span><div><h2>Segunda persona</h2><p>Estos datos se usan únicamente para calcular la sinastría.</p></div></div>
+              <div class="form-grid">
+                <label class="span-2">Nombre o alias<input id="name2" name="name2" placeholder="Ej. Daniel" /></label>
+                <label>Fecha<input id="birthDate2" name="birthDate2" type="date" /></label>
+                <label>Hora local<input id="birthTime2" name="birthTime2" type="time" /></label>
+                <label>País
+                  <select id="countryCode2" name="countryCode2"><option value="">Selecciona un país</option></select>
+                  <input id="country2" name="country2" type="hidden" />
+                </label>
+                <label class="city-field">Ciudad
+                  <input id="city2" name="city2" autocomplete="off" placeholder="Escribe al menos 2 letras" disabled />
+                  <div id="cityResults2" class="city-results hidden" role="listbox" aria-label="Ciudades encontradas para la segunda persona"></div>
+                </label>
+                <input id="lat2" name="lat2" type="hidden" />
+                <input id="lon2" name="lon2" type="hidden" />
+                <input id="timezone2" name="timezone2" type="hidden" />
+                <input id="utcOffset2" name="utcOffset2" type="hidden" />
+                <div id="locationSummary2" class="location-summary span-2"><span>⌖</span><div><b>Selecciona país y ciudad</b><small>Coordenadas y zona horaria automáticas.</small></div></div>
+              </div>
+            </section>
             <label>Pregunta o intención<textarea id="intention" name="intention" rows="4" placeholder="¿Qué aspecto de mi carta deseo comprender mejor?"></textarea></label>
             <details class="advanced">
               <summary>Introducir posiciones revisadas</summary>
@@ -234,7 +256,7 @@
         <div data-field="badges" class="badges"></div>
       </header>
       <section class="chart-dashboard"><div class="wheel-wrap" data-field="wheel"></div><div class="big-three" data-field="bigThree"></div></section>
-      <nav class="result-nav"><a href="#posiciones">Posiciones</a><a href="#casas">Casas</a><a href="#aspectos">Aspectos</a><a href="#transitos">Tránsitos</a><a href="#interpretacion">Lectura</a><a href="#lectura-ia">IA</a></nav>
+      <nav class="result-nav"><a href="#posiciones">Posiciones</a><a href="#casas">Casas</a><a href="#aspectos">Aspectos</a><a href="#sinastria">Sinastría</a><a href="#transitos">Tránsitos</a><a href="#interpretacion">Lectura</a><a href="#lectura-ia">IA</a></nav>
       <section id="posiciones" class="result-section-block"><div class="block-heading"><p class="eyebrow">Datos técnicos</p><h2>Posiciones planetarias</h2></div><div class="planet-table" data-field="positions"></div><div class="method-note" data-field="method"></div></section>
       <section id="casas" class="result-section-block houses-section">
         <div class="houses-heading"><div class="block-heading"><p class="eyebrow">Doce áreas de experiencia</p><h2>Cúspides de las casas</h2><p>Grado exacto donde comienza cada casa según el sistema elegido.</p></div><button class="button quiet small no-print" data-action="edit-houses">Cambiar sistema</button></div>
@@ -242,6 +264,10 @@
         <div class="house-cusp-grid" data-field="houses"></div>
       </section>
       <section id="aspectos" class="result-section-block"><div class="block-heading"><p class="eyebrow">Geometría interior</p><h2>Aspectos completos</h2><p>Aspectos mayores y menores ordenados por precisión.</p></div><div class="aspects-panel" data-field="aspects"></div></section>
+      <section id="sinastria" class="result-section-block synastry-section" data-field="synastrySection">
+        <div class="block-heading"><p class="eyebrow">Dos cielos en diálogo</p><h2>Sinastría de cartas</h2><p>Contactos entre los planetas y ángulos de ambas personas.</p></div>
+        <div data-field="synastry"></div>
+      </section>
       <section id="transitos" class="result-section-block transit-section">
         <div class="transit-heading"><div class="block-heading"><p class="eyebrow">Cielo en movimiento</p><h2>Tránsitos actuales</h2><p>Planetas del momento comparados con tu carta natal.</p></div><button class="button soft no-print" data-action="transits">Actualizar tránsitos ↻</button></div>
         <div class="transit-output" data-field="transits"></div>
@@ -253,7 +279,7 @@
           <button class="button primary no-print" data-action="ai">Generar interpretación ✦</button>
         </div>
         <div class="ai-status-row"><span class="ai-status-dot"></span><b>IA opcional</b><span>Necesita conexión y puede solicitar autorización la primera vez.</span></div>
-        <div class="ai-privacy">Solo se envían las posiciones astrales y la intención escrita. No se comparte el nombre, la fecha exacta ni el lugar de nacimiento.</div>
+        <div class="ai-privacy">Solo se envían posiciones, aspectos e intención. En sinastría se usan “Persona A” y “Persona B”: no se comparten nombres, fechas exactas ni lugares.</div>
         <div class="ai-output" data-field="ai"><p>La interpretación aparecerá aquí cuando pulses el botón.</p></div>
       </section>
       <div class="actions reading-actions no-print"><button class="button primary" data-action="save">Guardar carta</button><button class="button soft" data-action="pdf">Crear PDF</button><button class="button quiet" data-action="copy">Copiar texto</button><button class="button quiet" data-action="html">Descargar informe</button></div>
@@ -262,6 +288,6 @@
 
   <script src="astronomy.browser.min.js?v=2.1.19"></script>
   <script src="https://js.puter.com/v2/"></script>
-  <script src="app.js?v=7.7.1" defer></script>
+  <script src="app.js?v=7.9.0" defer></script>
 </body>
 </html>

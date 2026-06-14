@@ -8,7 +8,9 @@ INICIO RÁPIDO · ALAYA ASTRO
 6. Revela el cosmograma.
 7. Genera opcionalmente la interpretación con IA.
 8. Consulta “Tránsitos actuales” para comparar el cielo de hoy con tu carta.
-9. Guarda la carta o crea un PDF.
+9. Elige “Vínculos” y completa la segunda persona para crear una sinastría.
+10. Revisa qué casas activa cada persona y la síntesis local del vínculo.
+11. Guarda la carta o crea un PDF.
 
 Las tres marcas incluidas son:
 - Alaya Holistics

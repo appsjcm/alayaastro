@@ -1,4 +1,4 @@
-const VERSION = "7.7.1";
+const VERSION = "7.9.0";
 const STORE = { history: "alaya_v70_history", settings: "alaya_v70_settings", draft: "alaya_v70_draft" };
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -29,6 +29,7 @@ const aspectDefs = [
   { name:"Oposición", angle:180, orb:8, symbol:"☍", tone:"tension", major:true }
 ];
 let geoCities = [];
+let geoCities2 = [];
 let selectedCity = null;
 
 function read(key, fallback){ try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
@@ -95,8 +96,11 @@ async function loadCountries(){
   const response = await fetch("data/countries.json");
   if(!response.ok) throw new Error("No se pudo cargar la lista de países");
   const countries = await response.json();
-  $("#countryCode").innerHTML = `<option value="">Selecciona un país</option>${countries.map(([code,name]) => `<option value="${code}">${escapeHtml(name)}</option>`).join("")}`;
+  const options = `<option value="">Selecciona un país</option>${countries.map(([code,name]) => `<option value="${code}">${escapeHtml(name)}</option>`).join("")}`;
+  $("#countryCode").innerHTML = options;
+  $("#countryCode2").innerHTML = options;
   $("#city").disabled = true;
+  $("#city2").disabled = true;
 }
 async function loadCities(countryCode){
   geoCities = []; selectedCity = null; $("#cityResults").classList.add("hidden");
@@ -106,6 +110,15 @@ async function loadCities(countryCode){
   if(!response.ok) throw new Error("No se pudieron cargar las ciudades de este país");
   geoCities = await response.json();
   $("#city").disabled = false; $("#city").placeholder = "Escribe al menos 2 letras";
+}
+async function loadCities2(countryCode){
+  geoCities2 = []; $("#cityResults2").classList.add("hidden");
+  if(!countryCode){ $("#city2").disabled = true; return; }
+  $("#city2").disabled = true; $("#city2").placeholder = "Cargando ciudades…";
+  const response = await fetch(`data/cities/${countryCode}.json`);
+  if(!response.ok) throw new Error("No se pudieron cargar las ciudades de la segunda persona");
+  geoCities2 = await response.json();
+  $("#city2").disabled = false; $("#city2").placeholder = "Escribe al menos 2 letras";
 }
 function renderCityResults(query){
   const key = searchKey(query);
@@ -133,6 +146,31 @@ function selectGeoCity(row){
   updateLocationSummary();
   saveDraft();
 }
+function updateLocationSummary2(){
+  const summary = $("#locationSummary2");
+  const city = $("#city2").value.trim(), country = $("#country2").value.trim();
+  const lat = Number($("#lat2").value), lon = Number($("#lon2").value), timezone = $("#timezone2").value;
+  const offset = historicalUtcOffset(timezone,$("#birthDate2").value,$("#birthTime2").value);
+  if(offset !== null) $("#utcOffset2").value = String(offset);
+  if(city && country && Number.isFinite(lat) && Number.isFinite(lon) && timezone){
+    summary.classList.add("ready");
+    summary.innerHTML = `<span>✓</span><div><b>${escapeHtml(city)}, ${escapeHtml(country)}</b><small>${lat.toFixed(4)}, ${lon.toFixed(4)} · ${escapeHtml(timezone)}${offset === null ? " · añade fecha y hora" : ` · ${formatUtcOffset(offset)}`}</small></div>`;
+  } else {
+    summary.classList.remove("ready");
+    summary.innerHTML = "<span>⌖</span><div><b>Selecciona país y ciudad</b><small>Coordenadas y zona horaria automáticas.</small></div>";
+  }
+}
+function renderCityResults2(query){
+  const key = searchKey(query), box = $("#cityResults2");
+  if(key.length < 2){ box.classList.add("hidden"); box.innerHTML = ""; return; }
+  const results = geoCities2.filter(row => searchKey(row[0]).includes(key) || searchKey(row[1]).includes(key)).slice(0,30);
+  box.innerHTML = results.length ? results.map((row,index) => `<button class="city-option" type="button" data-city2-index="${index}"><span><b>${escapeHtml(row[0])}</b><small>${row[2] ? `Región ${escapeHtml(row[2])}` : escapeHtml($("#country2").value)}</small></span><small>${row[6] ? Number(row[6]).toLocaleString("es-ES") : ""}</small></button>`).join("") : `<div class="city-option"><span><b>Sin resultados</b><small>Prueba otra escritura.</small></span></div>`;
+  box.dataset.results = JSON.stringify(results); box.classList.remove("hidden");
+}
+function selectGeoCity2(row){
+  $("#city2").value = row[0]; $("#lat2").value = row[3]; $("#lon2").value = row[4]; $("#timezone2").value = row[5];
+  $("#cityResults2").classList.add("hidden"); updateLocationSummary2(); saveDraft();
+}
 function requiredOk(){
   const data = formData();
   const fields = [
@@ -144,6 +182,11 @@ function requiredOk(){
   const lat = Number(data.lat), lon = Number(data.lon);
   if(!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180){
     toast("Revisa latitud y longitud"); return false;
+  }
+  if(data.readingType === "compatibilidad"){
+    const partnerFields = [["name2","nombre de la segunda persona"],["birthDate2","fecha de la segunda persona"],["birthTime2","hora de la segunda persona"],["city2","ciudad de la segunda persona"],["country2","país de la segunda persona"],["lat2","latitud de la segunda persona"],["lon2","longitud de la segunda persona"],["utcOffset2","UTC de la segunda persona"]];
+    const missingPartner = partnerFields.filter(([key]) => !String(data[key] || "").trim()).map(([,label]) => label);
+    if(missingPartner.length){ toast(`Falta: ${missingPartner.join(", ")}`); return false; }
   }
   return true;
 }
@@ -273,6 +316,84 @@ function calculateAspects(positions){
   }
   return aspects.sort((a,b) => a.orb - b.orb);
 }
+function calculateSynastry(first, second){
+  const keys = [...planetDefs.map(([key]) => key),"asc","mc","northNode","lilith"];
+  const definitions = aspectDefs.filter(definition => definition.major);
+  const aspects = [];
+  for(const from of keys){
+    for(const to of keys){
+      const raw = Math.abs(first.positions[from].longitude - second.positions[to].longitude);
+      const separation = Math.min(raw,360 - raw);
+      for(const definition of definitions){
+        const allowedOrb = ["sun","moon","asc"].includes(from) || ["sun","moon","asc"].includes(to) ? Math.min(definition.orb,6) : Math.min(definition.orb,4);
+        const orb = Math.abs(separation - definition.angle);
+        if(orb <= allowedOrb){
+          aspects.push({ ...definition,from,to,separation,orb });
+          break;
+        }
+      }
+    }
+  }
+  aspects.sort((a,b) => a.orb - b.orb);
+  const areas = [
+    { key:"Emoción",glyph:"☽",keys:["moon","sun","asc"] },
+    { key:"Comunicación",glyph:"☿",keys:["mercury"] },
+    { key:"Atracción",glyph:"♀",keys:["venus","mars","pluto","lilith"] },
+    { key:"Crecimiento",glyph:"♃",keys:["jupiter","saturn","northNode","mc"] }
+  ].map(area => {
+    const matches = aspects.filter(aspect => area.keys.includes(aspect.from) || area.keys.includes(aspect.to));
+    const harmony = matches.filter(aspect => aspect.tone === "harmony").length;
+    const tension = matches.filter(aspect => aspect.tone === "tension").length;
+    const neutral = matches.filter(aspect => aspect.tone === "neutral").length;
+    const score = Math.max(25,Math.min(95,55 + harmony * 7 + neutral * 3 - tension * 3));
+    return { ...area,score,count:matches.length,harmony,tension };
+  });
+  const overlayKeys = ["sun","moon","mercury","venus","mars","jupiter","saturn","northNode","lilith"];
+  const overlays = {
+    firstInSecond:overlayKeys.map(key => ({ key,house:houseFor(first.positions[key].longitude,second.cusps) })),
+    secondInFirst:overlayKeys.map(key => ({ key,house:houseFor(second.positions[key].longitude,first.cusps) }))
+  };
+  const areaText = {
+    "Emoción":{
+      high:"Hay varios puentes naturales para reconocer necesidades, ritmos y maneras de expresar afecto.",
+      medium:"La conexión emocional combina afinidad con diferencias que conviene nombrar con calma.",
+      low:"Las necesidades emocionales pueden operar con códigos distintos; preguntar antes de interpretar será esencial."
+    },
+    "Comunicación":{
+      high:"Las ideas encuentran vías ágiles de intercambio y existe facilidad para estimular la curiosidad mutua.",
+      medium:"La conversación puede ser fértil cuando se aclaran intención, tono y expectativas.",
+      low:"Conviene reducir suposiciones y comprobar qué quiso decir realmente cada persona."
+    },
+    "Atracción":{
+      high:"La carta muestra una corriente intensa de interés, magnetismo y movilización creativa.",
+      medium:"La atracción se alimenta tanto de coincidencias como de contrastes que despiertan movimiento.",
+      low:"El deseo puede expresarse a ritmos diferentes; los límites y el consentimiento necesitan especial claridad."
+    },
+    "Crecimiento":{
+      high:"El vínculo ofrece apoyos visibles para ampliar perspectivas y sostener aprendizajes compartidos.",
+      medium:"Hay potencial de crecimiento si libertad, compromiso y responsabilidad se negocian de forma explícita.",
+      low:"Las lecciones pueden sentirse exigentes; resulta útil separar acompañamiento de obligación."
+    }
+  };
+  const insights = areas.map(area => {
+    const level = area.score >= 72 ? "high" : area.score >= 50 ? "medium" : "low";
+    const strongest = aspects.find(aspect => area.keys.includes(aspect.from) || area.keys.includes(aspect.to));
+    return {
+      key:area.key,
+      score:area.score,
+      text:areaText[area.key][level],
+      evidence:strongest ? `${nameFor(strongest.from)} ${strongest.name.toLowerCase()} ${nameFor(strongest.to)} · orbe ${round(strongest.orb,1)}°` : "Sin contactos mayores dentro de los orbes configurados."
+    };
+  });
+  return { aspects,areas,overlays,insights };
+}
+function partnerDataFrom(data){
+  return {
+    name:data.name2,birthDate:data.birthDate2,birthTime:data.birthTime2,city:data.city2,country:data.country2,
+    countryCode:data.countryCode2,lat:data.lat2,lon:data.lon2,timezone:data.timezone2,utcOffset:data.utcOffset2,
+    timeAccuracy:"exacta",houses:data.houses,readingType:"natal",intention:data.intention || "",astroText:""
+  };
+}
 function calculateTransitSnapshot(reading, date = new Date()){
   const positions = {};
   for(const [key,, ,body] of planetDefs){
@@ -361,11 +482,19 @@ function buildReading(data){
   ];
   if(aspects[0]) sections.push({ title:`Aspecto dominante: ${aspects[0].name}`, text:`${nameFor(aspects[0].from)} y ${nameFor(aspects[0].to)} forman una ${aspects[0].name.toLowerCase()} con un orbe de ${round(aspects[0].orb,1)}°. Es uno de los vínculos geométricos más precisos de esta carta.` });
   const transits = data.readingType === "hoy" ? calculateTransitSnapshot({ positions,cusps },new Date()) : null;
-  return {
+  const reading = {
     id:`alaya-${Date.now()}`, created:new Date().toISOString(), version:VERSION,
     title:`Carta natal de ${data.name}`, subtitle:`${data.city}, ${data.country} · ${data.birthDate} · ${data.birthTime}`,
     data, utcDate:date.toISOString(), positions, cusps, aspects, element, houseLabel, method, sections, transits
   };
+  if(data.readingType === "compatibilidad"){
+    const partner = buildReading(partnerDataFrom(data));
+    reading.partner = partner;
+    reading.synastry = calculateSynastry(reading,partner);
+    reading.title = `Sinastría de ${data.name} y ${partner.data.name}`;
+    reading.subtitle = `${data.city}, ${data.country} · ${partner.data.city}, ${partner.data.country}`;
+  }
+  return reading;
 }
 function polar(cx, cy, radius, degrees){
   const angle = (degrees - 90) * Math.PI / 180;
@@ -472,6 +601,38 @@ function renderAspects(reading){
   const cards = list => list.map(aspect => `<article class="aspect-card aspect-card-${aspect.tone}"><span><b>${nameFor(aspect.from)}</b><small>${reading.positions[aspect.from].sign}</small></span><span>${aspect.symbol}</span><span><b>${nameFor(aspect.to)}</b><small>${aspect.name} · orbe ${round(aspect.orb,1)}°</small></span></article>`).join("");
   return `<div class="aspect-group"><h3>Aspectos mayores <small>${major.length}</small></h3><div class="aspect-grid">${cards(major)}</div></div><div class="aspect-group"><h3>Aspectos menores <small>${minor.length}</small></h3><div class="aspect-grid">${cards(minor)}</div></div>`;
 }
+function renderSynastryWheel(reading){
+  const center = 350, rotation = -reading.positions.asc.longitude;
+  const line = (r1,r2,degree,className) => {
+    const a = polar(center,center,r1,degree), b = polar(center,center,r2,degree);
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="${className}"/>`;
+  };
+  const zodiac = signs.map((sign,index) => {
+    const p = polar(center,center,318,rotation + index * 30 + 15);
+    return `${line(292,334,rotation + index * 30,"wheel-line")}<text x="${p.x}" y="${p.y}" class="zodiac-glyph">${signGlyph[index]}</text>`;
+  }).join("");
+  const keys = [...planetDefs.map(([key]) => key),"asc","northNode","lilith"];
+  const markers = (chart,radius,className) => keys.map(key => {
+    const angle = rotation + chart.positions[key].longitude;
+    const p = polar(center,center,radius,angle);
+    return `<g class="${className}"><circle cx="${p.x}" cy="${p.y}" r="15"/><text x="${p.x}" y="${p.y + 1}">${glyphFor(key)}</text><title>${chart.data.name}: ${nameFor(key)} ${chart.positions[key].label}</title></g>`;
+  }).join("");
+  const aspects = reading.synastry.aspects.slice(0,30).map(aspect => {
+    const a = polar(center,center,198,rotation + reading.positions[aspect.from].longitude);
+    const b = polar(center,center,250,rotation + reading.partner.positions[aspect.to].longitude);
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="synastry-line aspect-${aspect.tone}"><title>${nameFor(aspect.from)} ${aspect.name} ${nameFor(aspect.to)}</title></line>`;
+  }).join("");
+  return `<svg class="synastry-wheel" viewBox="0 0 700 700" role="img" aria-label="Doble rueda de ${escapeHtml(reading.data.name)} y ${escapeHtml(reading.partner.data.name)}"><circle cx="350" cy="350" r="338" class="wheel-bg"/><circle cx="350" cy="350" r="292" class="wheel-ring outer"/><circle cx="350" cy="350" r="266" class="synastry-ring partner"/><circle cx="350" cy="350" r="222" class="synastry-ring primary"/><circle cx="350" cy="350" r="172" class="wheel-ring inner"/>${zodiac}${aspects}${markers(reading,210,"synastry-marker primary")}${markers(reading.partner,266,"synastry-marker partner")}<text x="350" y="344" class="synastry-center-name">${escapeHtml(reading.data.name)}</text><text x="350" y="365" class="synastry-center-name partner">${escapeHtml(reading.partner.data.name)}</text></svg>`;
+}
+function renderSynastry(reading){
+  if(!reading.synastry) return "";
+  const areas = reading.synastry.areas.map(area => `<article class="compatibility-card"><span>${area.glyph}</span><div><b>${area.key}</b><small>${area.count} contactos · ${area.harmony} fluidos · ${area.tension} tensos</small><div class="compatibility-bar"><i style="width:${area.score}%"></i></div></div><strong>${area.score}%</strong></article>`).join("");
+  const insights = reading.synastry.insights.map(insight => `<article class="synastry-insight"><div><b>${escapeHtml(insight.key)}</b><span>${insight.score}%</span></div><p>${escapeHtml(insight.text)}</p><small>${escapeHtml(insight.evidence)}</small></article>`).join("");
+  const overlayList = (items,owner,host) => items.map(item => `<article class="overlay-item"><span>${glyphFor(item.key)}</span><div><b>${nameFor(item.key)} de ${escapeHtml(owner)}</b><small>activa la casa ${item.house} de ${escapeHtml(host)} · ${houseThemes[item.house - 1]}</small></div><strong>${item.house}</strong></article>`).join("");
+  const overlays = `<div class="overlay-columns"><section><h4>${escapeHtml(reading.data.name)} en la carta de ${escapeHtml(reading.partner.data.name)}</h4>${overlayList(reading.synastry.overlays.firstInSecond,reading.data.name,reading.partner.data.name)}</section><section><h4>${escapeHtml(reading.partner.data.name)} en la carta de ${escapeHtml(reading.data.name)}</h4>${overlayList(reading.synastry.overlays.secondInFirst,reading.partner.data.name,reading.data.name)}</section></div>`;
+  const aspects = reading.synastry.aspects.slice(0,18).map(aspect => `<article class="synastry-aspect aspect-card-${aspect.tone}"><span><b>${reading.data.name}</b><small>${glyphFor(aspect.from)} ${nameFor(aspect.from)}</small></span><strong>${aspect.symbol}</strong><span><b>${reading.partner.data.name}</b><small>${glyphFor(aspect.to)} ${nameFor(aspect.to)} · ${aspect.name} ${round(aspect.orb,1)}°</small></span></article>`).join("");
+  return `<div class="synastry-names"><span><i class="primary"></i>${escapeHtml(reading.data.name)}</span><span><i class="partner"></i>${escapeHtml(reading.partner.data.name)}</span></div><div class="synastry-wheel-wrap">${renderSynastryWheel(reading)}</div><div class="compatibility-grid">${areas}</div><h3 class="synastry-subtitle">Síntesis del vínculo</h3><div class="synastry-insights">${insights}</div><h3 class="synastry-subtitle">Superposición de casas</h3><p class="synastry-lead">Muestra en qué área vital de una persona se expresa cada planeta de la otra.</p>${overlays}<h3 class="synastry-subtitle">Aspectos entre ambas cartas</h3><div class="synastry-aspects">${aspects}</div><p class="synastry-disclaimer">Los porcentajes resumen la mezcla de contactos, no determinan el éxito de una relación. Las tensiones también pueden aportar atracción, conciencia y crecimiento.</p>`;
+}
 function renderTransits(reading){
   if(!reading.transits) return `<div class="transit-empty"><span>↻</span><div><b>Calcula el cielo de ahora</b><p>La carta natal permanece fija; los tránsitos se actualizan cuando tú lo decidas.</p></div></div>`;
   const date = new Date(reading.transits.date);
@@ -493,6 +654,7 @@ function aiChartContext(reading){
     .map(aspect => `${nameFor(aspect.from)} ${aspect.name} ${nameFor(aspect.to)}, orbe ${round(aspect.orb,1)}°`)
     .join("\n");
   const transits = reading.transits?.aspects?.length ? `\n\nTRÁNSITOS ACTUALES\n${reading.transits.aspects.slice(0,16).map(aspect => `${nameFor(aspect.transit)} en tránsito ${aspect.name} ${nameFor(aspect.natal)} natal, orbe ${round(aspect.orb,1)}°, por casa ${aspect.transitHouse}`).join("\n")}` : "";
+  const synastry = reading.synastry ? `\n\nPOSICIONES DE LA PERSONA B\n${Object.entries(reading.partner.positions).map(([key,position]) => `${nameFor(key)}: ${position.label}, casa ${position.house}`).join("\n")}\n\nSINASTRÍA\n${reading.synastry.aspects.slice(0,24).map(aspect => `Persona A: ${nameFor(aspect.from)} ${aspect.name} Persona B: ${nameFor(aspect.to)}, orbe ${round(aspect.orb,1)}°`).join("\n")}\n\nSUPERPOSICIÓN DE CASAS\n${reading.synastry.overlays.firstInSecond.map(item => `Persona A: ${nameFor(item.key)} en casa ${item.house} de Persona B`).join("\n")}\n${reading.synastry.overlays.secondInFirst.map(item => `Persona B: ${nameFor(item.key)} en casa ${item.house} de Persona A`).join("\n")}` : "";
   return `Sistema de casas: ${reading.houseLabel}
 Elemento dominante: ${reading.element}
 Intención de la persona: ${reading.data.intention || "Comprender su carta natal"}
@@ -501,7 +663,7 @@ POSICIONES
 ${positions}
 
 ASPECTOS MÁS PRECISOS
-${aspects}${transits}`;
+${aspects}${transits}${synastry}`;
 }
 function aiResponseText(response){
   if(typeof response === "string") return response;
@@ -527,7 +689,7 @@ async function generateAiReading(reading, article, button){
   const messages = [
     {
       role:"system",
-      content:"Eres la voz astrológica de Alaya Astro. Redacta en español una interpretación profunda, cálida y responsable. La astrología es una herramienta simbólica de reflexión, no una certeza científica ni una predicción fatalista. No diagnostiques salud, no anuncies sucesos inevitables y no inventes posiciones. Organiza la respuesta con estos títulos: ESENCIA Y MUNDO EMOCIONAL, VOCACIÓN Y CAMINO, VÍNCULOS, SOMBRAS Y CRECIMIENTO, TALENTOS, y ORIENTACIÓN PRÁCTICA. Si recibes tránsitos actuales, añade CLIMA DEL MOMENTO, diferencia con claridad lo natal de lo temporal y evita presentar el tránsito como destino. Integra los aspectos entre sí, evita repetir datos y termina con tres preguntas de reflexión. Extensión aproximada: 900 palabras."
+      content:"Eres la voz astrológica de Alaya Astro. Redacta en español una interpretación profunda, cálida y responsable. La astrología es una herramienta simbólica de reflexión, no una certeza científica ni una predicción fatalista. No diagnostiques salud, no anuncies sucesos inevitables y no inventes posiciones. Si recibes sinastría, organiza la respuesta en CONEXIÓN EMOCIONAL, COMUNICACIÓN, ATRACCIÓN, DESAFÍOS, POTENCIAL DE CRECIMIENTO y ACUERDOS CONSCIENTES; habla de la dinámica entre ambas personas sin declarar que sean compatibles o incompatibles de forma absoluta. Si recibes tránsitos actuales, añade CLIMA DEL MOMENTO y diferencia lo natal de lo temporal. Integra los aspectos, evita repetir datos y termina con tres preguntas de reflexión. Extensión aproximada: 900 palabras."
     },
     { role:"user", content:aiChartContext(reading) }
   ];
@@ -551,11 +713,17 @@ async function generateAiReading(reading, article, button){
   }
 }
 function renderReading(reading){
+  if(reading.synastry && reading.partner && (!reading.synastry.overlays || !reading.synastry.insights)){
+    reading.synastry = calculateSynastry(reading,reading.partner);
+    reading.version = VERSION;
+  }
   setStep(3);
   const template = $("#readingTemplate").content.cloneNode(true);
   $('[data-field="title"]',template).textContent = reading.title;
   $('[data-field="subtitle"]',template).textContent = reading.subtitle;
-  $('[data-field="badges"]',template).innerHTML = [reading.element,reading.houseLabel,reading.method].map(label => `<span class="badge">${escapeHtml(label)}</span>`).join("");
+  $(".reading-header .eyebrow",template).textContent = reading.synastry ? "Sinastría personal" : "Cosmograma personal";
+  const badgeLabels = reading.synastry ? [`A · ${reading.element}`,`B · ${reading.partner.element}`,reading.houseLabel] : [reading.element,reading.houseLabel,reading.method];
+  $('[data-field="badges"]',template).innerHTML = badgeLabels.map(label => `<span class="badge">${escapeHtml(label)}</span>`).join("");
   $('[data-field="wheel"]',template).innerHTML = renderWheel(reading);
   $('[data-field="bigThree"]',template).innerHTML = renderBigThree(reading);
   $('[data-field="positions"]',template).innerHTML = renderPositions(reading);
@@ -563,6 +731,8 @@ function renderReading(reading){
   $('[data-field="houseNote"]',template).innerHTML = renderHouseNote(reading);
   $('[data-field="method"]',template).innerHTML = renderMethod(reading);
   $('[data-field="aspects"]',template).innerHTML = renderAspects(reading);
+  $('[data-field="synastry"]',template).innerHTML = renderSynastry(reading);
+  $('[data-field="synastrySection"]',template).classList.toggle("hidden",!reading.synastry);
   $('[data-field="transits"]',template).innerHTML = renderTransits(reading);
   $('[data-field="sections"]',template).innerHTML = reading.sections.map(section => `<article class="reading-section"><h3>${escapeHtml(section.title)}</h3><p>${escapeHtml(section.text)}</p></article>`).join("");
   $('[data-field="ai"]',template).innerHTML = reading.aiInterpretation ? renderAiText(reading.aiInterpretation) : "<p>La interpretación aparecerá aquí cuando pulses el botón.</p>";
@@ -598,13 +768,15 @@ function readingText(reading){
   const positions = Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n");
   const sections = reading.sections.map(section => `${section.title}\n${section.text}`).join("\n\n");
   const transits = reading.transits?.aspects?.length ? `\n\nTRÁNSITOS\n${reading.transits.aspects.slice(0,16).map(aspect => `${nameFor(aspect.transit)} ${aspect.name} ${nameFor(aspect.natal)} natal · orbe ${round(aspect.orb,1)}°`).join("\n")}` : "";
+  const synastry = reading.synastry ? `\n\nSINASTRÍA CON ${reading.partner.data.name.toUpperCase()}\n\nSÍNTESIS\n${reading.synastry.insights.map(insight => `${insight.key} (${insight.score}%): ${insight.text} ${insight.evidence}`).join("\n")}\n\nSUPERPOSICIÓN DE CASAS\n${reading.synastry.overlays.firstInSecond.map(item => `${nameFor(item.key)} de ${reading.data.name}: casa ${item.house} de ${reading.partner.data.name} (${houseThemes[item.house - 1]})`).join("\n")}\n${reading.synastry.overlays.secondInFirst.map(item => `${nameFor(item.key)} de ${reading.partner.data.name}: casa ${item.house} de ${reading.data.name} (${houseThemes[item.house - 1]})`).join("\n")}\n\nASPECTOS\n${reading.synastry.aspects.slice(0,24).map(aspect => `${nameFor(aspect.from)} ${aspect.name} ${nameFor(aspect.to)} · orbe ${round(aspect.orb,1)}°`).join("\n")}` : "";
   const ai = reading.aiInterpretation ? `\n\nINTERPRETACIÓN CON IA\n${reading.aiInterpretation}` : "";
-  return `${reading.title}\n${reading.subtitle}\n\n${positions}\n\n${sections}${transits}${ai}`;
+  return `${reading.title}\n${reading.subtitle}\n\n${positions}\n\n${sections}${synastry}${transits}${ai}`;
 }
 function htmlDoc(reading){
   const transits = reading.transits?.aspects?.length ? `<section class="card"><h2>Tránsitos actuales</h2>${reading.transits.aspects.slice(0,16).map(aspect => `<p><b>${nameFor(aspect.transit)} ${aspect.name} ${nameFor(aspect.natal)} natal</b> · orbe ${round(aspect.orb,1)}°</p>`).join("")}</section>` : "";
+  const synastry = reading.synastry ? `<section class="card"><h2>Sinastría con ${escapeHtml(reading.partner.data.name)}</h2><h3>Síntesis del vínculo</h3>${reading.synastry.insights.map(insight => `<p><b>${escapeHtml(insight.key)} · ${insight.score}%</b><br>${escapeHtml(insight.text)} <span class="muted">${escapeHtml(insight.evidence)}</span></p>`).join("")}<h3>Superposición de casas</h3>${reading.synastry.overlays.firstInSecond.map(item => `<p>${nameFor(item.key)} de ${escapeHtml(reading.data.name)} en casa ${item.house} de ${escapeHtml(reading.partner.data.name)} · ${houseThemes[item.house - 1]}</p>`).join("")}${reading.synastry.overlays.secondInFirst.map(item => `<p>${nameFor(item.key)} de ${escapeHtml(reading.partner.data.name)} en casa ${item.house} de ${escapeHtml(reading.data.name)} · ${houseThemes[item.house - 1]}</p>`).join("")}<h3>Aspectos principales</h3>${reading.synastry.aspects.slice(0,24).map(aspect => `<p><b>${nameFor(aspect.from)} ${aspect.name} ${nameFor(aspect.to)}</b> · orbe ${round(aspect.orb,1)}°</p>`).join("")}</section>` : "";
   const ai = reading.aiInterpretation ? `<section class="card"><h2>Interpretación personalizada</h2><p>${escapeHtml(reading.aiInterpretation).replace(/\n/g,"<br>")}</p></section>` : "";
-  return `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(reading.title)}</title><style>body{font:16px/1.6 system-ui;max-width:900px;margin:auto;padding:32px;color:#303249;background:#fffefa}h1,h2{font-family:Georgia,serif;color:#496b96}.brand{letter-spacing:.18em;color:#a58035}.card{border:1px solid #ded7e8;border-radius:16px;padding:18px;margin:14px 0}.muted{color:#74758a}@media print{body{padding:0}}</style><p class="brand">ALAYA ASTRO</p><h1>${escapeHtml(reading.title)}</h1><p class="muted">${escapeHtml(reading.subtitle)}</p><div class="card"><h2>Posiciones</h2><pre>${escapeHtml(Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n"))}</pre></div>${reading.sections.map(section => `<section class="card"><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.text)}</p></section>`).join("")}${transits}${ai}</html>`;
+  return `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(reading.title)}</title><style>body{font:16px/1.6 system-ui;max-width:900px;margin:auto;padding:32px;color:#303249;background:#fffefa}h1,h2{font-family:Georgia,serif;color:#496b96}.brand{letter-spacing:.18em;color:#a58035}.card{border:1px solid #ded7e8;border-radius:16px;padding:18px;margin:14px 0}.muted{color:#74758a}@media print{body{padding:0}}</style><p class="brand">ALAYA ASTRO</p><h1>${escapeHtml(reading.title)}</h1><p class="muted">${escapeHtml(reading.subtitle)}</p><div class="card"><h2>Posiciones</h2><pre>${escapeHtml(Object.entries(reading.positions).map(([key,p]) => `${nameFor(key)}: ${p.label}, casa ${p.house}`).join("\n"))}</pre></div>${reading.sections.map(section => `<section class="card"><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.text)}</p></section>`).join("")}${synastry}${transits}${ai}</html>`;
 }
 function download(name, content, type = "application/json"){
   const blob = new Blob([content],{ type });
@@ -643,10 +815,18 @@ async function loadDraft(){
     await loadCities(draft.countryCode);
     $("#city").value = draft.city || "";
   }
+  if(draft.countryCode2){
+    await loadCities2(draft.countryCode2);
+    $("#city2").value = draft.city2 || "";
+  }
   updateLocationSummary();
+  updateLocationSummary2();
   updateChoices();
 }
-function updateChoices(){ $$(".choice").forEach(choice => choice.classList.toggle("selected",$("input",choice)?.checked)); }
+function updateChoices(){
+  $$(".choice").forEach(choice => choice.classList.toggle("selected",$("input",choice)?.checked));
+  $("#partnerFields").classList.toggle("hidden",$('input[name="readingType"]:checked')?.value !== "compatibilidad");
+}
 function applySettings(){
   const settings = read(STORE.settings,{});
   document.body.classList.toggle("comfort",!!settings.comfort);
@@ -655,6 +835,15 @@ function applySettings(){
 }
 function createDemo(){
   const demo = { name:"Atenea",birthDate:"1992-07-21",birthTime:"12:30",city:"Barcelona",country:"España",countryCode:"ES",lat:"41.3874",lon:"2.1686",timezone:"Europe/Madrid",utcOffset:"2",timeAccuracy:"exacta",houses:"porphyry",readingType:"natal",intention:"Comprender mis talentos y mi manera de relacionarme." };
+  Object.entries(demo).forEach(([key,value]) => $$(`[name="${key}"]`).forEach(control => { if(control.type === "radio") control.checked = control.value === value; else control.value = value; }));
+  updateChoices(); route("crear"); renderReading(buildReading(demo));
+}
+function createSynastryDemo(){
+  const demo = {
+    name:"Atenea",birthDate:"1992-07-21",birthTime:"12:30",city:"Barcelona",country:"España",countryCode:"ES",lat:"41.3874",lon:"2.1686",timezone:"Europe/Madrid",utcOffset:"2",
+    timeAccuracy:"exacta",houses:"porphyry",readingType:"compatibilidad",intention:"Comprender la dinámica emocional, la comunicación y el crecimiento del vínculo.",
+    name2:"Orión",birthDate2:"1989-11-03",birthTime2:"18:45",city2:"Madrid",country2:"España",countryCode2:"ES",lat2:"40.4168",lon2:"-3.7038",timezone2:"Europe/Madrid",utcOffset2:"1"
+  };
   Object.entries(demo).forEach(([key,value]) => $$(`[name="${key}"]`).forEach(control => { if(control.type === "radio") control.checked = control.value === value; else control.value = value; }));
   updateChoices(); route("crear"); renderReading(buildReading(demo));
 }
@@ -693,11 +882,23 @@ function bind(){
     try { await loadCities(event.target.value); } catch(error){ toast(error.message); }
     saveDraft();
   });
+  $("#countryCode2").addEventListener("change",async event => {
+    const option = event.target.selectedOptions[0];
+    $("#country2").value = option?.textContent || "";
+    $("#city2").value = ""; $("#lat2").value = ""; $("#lon2").value = ""; $("#timezone2").value = ""; $("#utcOffset2").value = "";
+    updateLocationSummary2();
+    try { await loadCities2(event.target.value); } catch(error){ toast(error.message); }
+    saveDraft();
+  });
   $("#city").addEventListener("input",event => {
     selectedCity = null;
     $("#lat").value = ""; $("#lon").value = ""; $("#timezone").value = ""; $("#utcOffset").value = "";
     updateLocationSummary();
     renderCityResults(event.target.value);
+  });
+  $("#city2").addEventListener("input",event => {
+    $("#lat2").value = ""; $("#lon2").value = ""; $("#timezone2").value = ""; $("#utcOffset2").value = "";
+    updateLocationSummary2(); renderCityResults2(event.target.value);
   });
   $("#cityResults").addEventListener("click",event => {
     const button = event.target.closest("[data-city-index]");
@@ -705,11 +906,19 @@ function bind(){
     const results = JSON.parse($("#cityResults").dataset.results || "[]");
     selectGeoCity(results[Number(button.dataset.cityIndex)]);
   });
+  $("#cityResults2").addEventListener("click",event => {
+    const button = event.target.closest("[data-city2-index]");
+    if(!button) return;
+    const results = JSON.parse($("#cityResults2").dataset.results || "[]");
+    selectGeoCity2(results[Number(button.dataset.city2Index)]);
+  });
   document.addEventListener("click",event => {
-    if(!event.target.closest(".city-field")) $("#cityResults").classList.add("hidden");
+    if(!event.target.closest(".city-field")){ $("#cityResults").classList.add("hidden"); $("#cityResults2").classList.add("hidden"); }
   });
   $("#birthDate").addEventListener("change",updateLocationSummary);
   $("#birthTime").addEventListener("change",updateLocationSummary);
+  $("#birthDate2").addEventListener("change",updateLocationSummary2);
+  $("#birthTime2").addEventListener("change",updateLocationSummary2);
   $("#manualLocationToggle").addEventListener("change",event => $("#manualLocationFields").classList.toggle("hidden",!event.target.checked));
   $("#applyManualLocation").addEventListener("click",() => {
     const lat = Number($("#manualLat").value), lon = Number($("#manualLon").value);
@@ -722,6 +931,7 @@ function bind(){
     updateLocationSummary(); saveDraft(); toast("Ubicación manual aplicada");
   });
   $$("[data-demo]").forEach(button => button.onclick = createDemo);
+  $$("[data-synastry-demo]").forEach(button => button.onclick = createSynastryDemo);
   $$("[data-transits]").forEach(button => button.onclick = openCurrentTransits);
   $("#welcomeStart").onclick = () => {
     const name = $("#welcomeName").value.trim();

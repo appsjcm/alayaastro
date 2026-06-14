@@ -1,7 +1,7 @@
 {
   "name": "Alaya Astro",
   "short_name": "Alaya Astro",
-  "description": "Cosmograma personal con rueda completa, cúspides, tránsitos actuales e interpretación opcional con IA.",
+  "description": "Cosmograma personal con rueda completa, cúspides, tránsitos, sinastría con casas cruzadas e interpretación opcional con IA.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

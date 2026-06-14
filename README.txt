@@ -1,4 +1,4 @@
-ALAYA ASTRO v7.7.1
+ALAYA ASTRO v7.9.0
 
 IDENTIDAD
 - Alaya Holistics es la marca principal.
@@ -23,6 +23,9 @@ CÁLCULO
 - Explicación del grado y amplitud de cada casa; Porfirio recomendado por defecto.
 - Aspectos mayores y menores con orbes configurados.
 - Tránsitos planetarios actuales comparados con la carta natal.
+- Sinastría entre dos cartas con doble rueda, aspectos cruzados y cuatro áreas del vínculo.
+- Superposición bidireccional de planetas en las casas de la otra persona.
+- Síntesis local de emoción, comunicación, atracción y crecimiento, disponible sin IA.
 - Entrada de latitud, longitud y desfase UTC.
 - Importación opcional de posiciones ya revisadas.
 - Selector local de 252 países y territorios.
